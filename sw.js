@@ -15,7 +15,7 @@ self.addEventListener('fetch', async (fetchEvent) => {
     fetchEvent.respondWith(queryResult);
   }
 });
-
+ 
 function exists (query) {
   //hashes query using CryptoJS.Md5
   const hash = CryptoJS.MD5(query); 
