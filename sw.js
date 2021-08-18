@@ -1,4 +1,4 @@
-import { get } from 'idb-keyval';
+import { get, set } from 'idb-keyval';
 import CryptoJS from 'crypto-js';
 
 const getBody = async (e) => {
@@ -47,4 +47,16 @@ async function executeQuery(url, method, headers, body) {
     .catch(err => {
       console.error("ERROR IN SW FETCH: ", err);
     })
+}
+
+async function hashQuery(clientQuery) {
+    //convert client query to string and run md5 hash function on it
+    const hash = CryptoJS.MD5(JSON.stringify(clientQuery));
+    return hash.toString(CryptoJS.enc.hex);
+  }
+
+async function writeToCache(hash, queryResult) {
+    set(hashQuery(hash), queryResult)
+        .then(() => console.log('It worked!'))
+        .catch((err) => console.log('It failed!', err));
 }
