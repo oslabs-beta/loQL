@@ -13,4 +13,24 @@ self.addEventListener('fetch', async (fetchEvent) => {
   }
 });
 
-async function runCachingLogic(url, method, headers, body) {}
+async function runCachingLogic(url, method, headers, body) {
+  // Hash the query
+  // Check whether the query exists in our DB
+    // If it does, return the value
+  // If not, execute the query (Jae + Harry) and return result into variable
+  const result = await executeQuery(url, method, headers, body);
+  console.log('result from query =', result);
+  // Set the hash and the result in indexDB
+  // Return the result to the user
+}
+
+async function executeQuery(url, method, headers, body) { 
+  return fetch(url, { method, headers, body })
+    .then(r => r.json())
+    .then(data => {
+      return data
+    })
+    .catch(err => {
+      console.error("ERROR IN SW FETCH: ", err);
+    })
+}
