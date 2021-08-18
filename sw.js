@@ -19,11 +19,10 @@ self.addEventListener('fetch', async (fetchEvent) => {
 });
 
 function exists (query) {
-  const hash = CryptoJS.MD5(query);
-  return get(hash.toString(CryptoJS.enc.hex))
+  const hash = CryptoJS.MD5(query); //hashes query using CryptoJS.Md5
+  return get(hash.toString(CryptoJS.enc.hex)) //encodes hash from hex format
     .then((val) => {
-      console.log(val);
-      if (val) {
+      if (val) { //checks to see if value exists within IndexDB, if it doesn't, idb-keyval will return undefined for us
         return val;
       }
     })
