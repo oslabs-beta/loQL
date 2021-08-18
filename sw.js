@@ -1,22 +1,22 @@
 
+const getBody = async (e) => {
+  const blob = await e.request.blob();
+  const body = await blob.text();
+  return body;
+};
 
-// -- JR --> function executeNonCachedAndStoreToDB
+self.addEventListener('fetch', async (fetchEvent) => {
+  const { url, method, headers } = fetchEvent.request; // headers is an iterable...
+  if (url.endsWith('/graphql')) {
+    const body = await getBody(fetchEvent);
+    const queryResult = await runCachingLogic(url, method, headers, body);
+    fetchEvent.respondWith(queryResult);
+  }
+});
 
-// add event listener for fetch request
-// hash the query and check if hashed query exists in indexDB
-// if it doesn't
-  // let the original fetch from client execute to graphQL server
-  // then store the response to key of cached query
+async function runCachingLogic(url, method, headers, body) {}
 
-// source
-// https://stackoverflow.com/questions/15306611/check-if-indexeddb-objectstore-already-contains-key
-// https://developer.mozilla.org/en-US/docs/Web/API/IDBObjectStore/add
-
-
-self.addEventListener('fetch', (event) => {
-  // hash the query string using Konstantin's hash function
-  console.log('fetchEvent.request = ', fetchEvent.request);
-  // console.log('fetchEvent.request.body =', fetchEvent.request.body);
+async function storeQueryResult(arg) {
   const hashedQuery = function KonstantinHash(/* getbody result */);
 
   // check if that query key exists in indexDB
@@ -58,4 +58,4 @@ self.addEventListener('fetch', (event) => {
       // if key already exists --> might not need this
     }
   }
-})
+}
