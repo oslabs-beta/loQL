@@ -1,16 +1,6 @@
 import { get } from 'idb-keyval';
 import CryptoJS from 'crypto-js';
 
-const simpleHash = str => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash &= hash; // Convert to 32bit integer
-  }
-  return new Uint32Array([hash])[0].toString(36);
-};
-
 const getBody = async (e) => {
   const blob = await e.request.blob();
   const body = await blob.text();
@@ -29,8 +19,8 @@ self.addEventListener('fetch', async (fetchEvent) => {
 });
 
 function exists (query) {
-  const hash = simpleHash(query);
-  return get(hash)
+  const hash = CryptoJS.MD5(query);
+  return get(hash.toString(CryptoJS.enc.hex))
     .then((val) => {
       console.log(val);
       if (val) {
