@@ -16,19 +16,6 @@ self.addEventListener('fetch', async (fetchEvent) => {
   }
 });
 
-function exists (query) {
-  const hash = CryptoJS.MD5(query); //hashes query using CryptoJS.Md5
-  return get(hash.toString(CryptoJS.enc.hex)) //encodes hash from hex format
-    .then((val) => {
-      if (val) { //checks to see if value exists within IndexDB, if it doesn't, idb-keyval will return undefined for us
-        return val;
-      }
-    })
-    .catch(err => {
-      console.log(`Error: ${err}`)
-    })
-}=
-
 async function runCachingLogic(url, method, headers, body) {
   const doesExist = await exists(body);
   if (doesExist) {
@@ -48,3 +35,16 @@ async function executeQuery(url, method, headers, body) {
       console.error("ERROR IN SW FETCH: ", err);
     })
 }
+
+function exists (query) {
+  const hash = CryptoJS.MD5(query); //hashes query using CryptoJS.Md5
+  return get(hash.toString(CryptoJS.enc.hex)) //encodes hash from hex format
+    .then((val) => {
+      if (val) { //checks to see if value exists within IndexDB, if it doesn't, idb-keyval will return undefined for us
+        return val;
+      }
+    })
+    .catch(err => {
+      console.log(`Error: ${err}`)
+    })
+};
