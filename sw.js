@@ -1,5 +1,5 @@
 import { get, set } from 'idb-keyval';
-import CryptoJS from 'crypto-js';
+import { MD5, enc } from 'crypto-js';
 
 // e.request is a stream, so we have to
 // read every chunk, write to a string and return it
@@ -37,8 +37,8 @@ async function runCachingLogic(url, method, headers, body) {
 
 // Hash the query and convert to hex string
 function hashQuery(clientQuery) {
-  const hashedQuery = CryptoJS.MD5(JSON.stringify(clientQuery));
-  return hashedQuery.toString(CryptoJS.enc.hex);
+  const hashedQuery = MD5(JSON.stringify(clientQuery));
+  return hashedQuery.toString(enc.hex);
 }
 
 // Checks for existence of hashed query in IDB
