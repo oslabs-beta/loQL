@@ -16,5 +16,9 @@
   "bugs": {
     "url": "https://github.com/oslabs-beta/loQL/issues"
   },
-  "homepage": "https://github.com/oslabs-beta/loQL#readme"
+  "homepage": "https://github.com/oslabs-beta/loQL#readme",
+  "dependencies": {
+    "crypto-js": "^4.1.1",
+    "idb-keyval": "^5.1.3"
+  }
 }
