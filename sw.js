@@ -1,3 +1,4 @@
+import { sw_log, sw_error_log } from './index';
 import { get, set } from 'idb-keyval';
 import { MD5, enc } from 'crypto-js';
 
@@ -10,27 +11,52 @@ const getBody = async (e) => {
 // Listen for fetch events, and for those to the /graphql endpoint,
 // run our caching logic, passing in information about the request.
 self.addEventListener('fetch', async (fetchEvent) => {
-  const { url, method, headers } = fetchEvent.request;
-  if (url.endsWith('/graphql')) {
-    const body = await getBody(fetchEvent);
-    const queryResult = await runCachingLogic(url, method, headers, body);
-    fetchEvent.respondWith(queryResult);
+  const clone = fetchEvent.request.clone();
+  const { url, method, headers } = clone;
+  const urlObject = new URL(url);
+  if (urlObject.pathname.endsWith('/graphql')) {
+    async function fetchAndGetResponse() {
+      try {
+        const body = await getBody(fetchEvent);
+        const queryResult = await runCachingLogic(
+          urlObject,
+          method,
+          headers,
+          body
+        );
+        return new Response(JSON.stringify(queryResult), { status: 200 });
+      } catch (err) {
+        sw_error_log('There was an error in the caching logic!', err.message);
+        return await fetch(clone);
+      }
+    }
+    fetchEvent.respondWith(fetchAndGetResponse());
   }
 });
 
 // The main wrapper function for our caching solution
-async function runCachingLogic(url, method, headers, body) {
-  const hashedQuery = hashQuery(body);
+async function runCachingLogic(urlObject, method, headers, body) {
+  let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
+  const hashedQuery = hashQuery(query);
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData) {
-    console.log('Fetched from cache');
-    console.log(cachedData);
+    sw_log('Fetched from cache');
     return cachedData;
   } else {
-    const data = await executeQuery(url, method, headers, body);
+    const data = await executeQuery(urlObject.href, method, headers, body);
     writeToCache(hashedQuery, data);
     return data;
   }
+}
+
+// If a GET method, we need to pull the query off the url
+// and use that instead of the POST body
+// EG: 'http://localhost:4000/graphql?query=query\{human(input:\{id:"1"\})\{name\}\}'
+function getQueryFromUrl(urlObject) {
+  const query = decodeURI(urlObject.searchParams.get('query'));
+  if (!query)
+    throw new Error(`This HTTP GET request is not a valid GQL request: ${url}`);
+  return query;
 }
 
 // Hash the query and convert to hex string
@@ -41,35 +67,35 @@ function hashQuery(clientQuery) {
 
 // Checks for existence of hashed query in IDB
 async function checkQueryExists(hashedQuery) {
-  console.log(hashedQuery);
   try {
     const val = await get(hashedQuery);
     return val;
   } catch (err) {
-    console.error(err);
+    sw_error_log('Error getting query from IDB', err.message);
   }
 }
 
-async function executeQuery(url, method, headers, body) { 
-  return fetch(url, { method, headers, body })
-    .then(r => r.json())
-    .then(data => {
-      return data
-    })
-    .catch(err => {
-      console.error("ERROR IN SW FETCH: ", err);
-    })
+// If the query doesn't exist in the cache, then execute
+// the query and return the result.
+async function executeQuery(url, method, headers, body) {
+  try {
+    const options = { method, headers };
+    if (method === 'POST') {
+      options.body = body;
+    }
+    const response = await fetch(url, options);
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    sw_error_log('Error executing query', err.message);
+  }
 }
 
-function exists (query) {
-  const hash = CryptoJS.MD5(query); //hashes query using CryptoJS.Md5
-  return get(hash.toString(CryptoJS.enc.hex)) //encodes hash from hex format
-    .then((val) => {
-      if (val) { //checks to see if value exists within IndexDB, if it doesn't, idb-keyval will return undefined for us
-        return val;
-      }
-    })
-    .catch(err => {
-      console.log(`Error: ${err}`)
-    })
-};
+// Write the result into cache
+function writeToCache(hash, queryResult) {
+  set(hash, queryResult)
+    .then(() => sw_log('Wrote response to cache.'))
+    .catch((err) =>
+      sw_error_log('Could not write response to cache', err.message)
+    );
+}
