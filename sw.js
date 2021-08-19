@@ -2,8 +2,6 @@ import { sw_log } from './index';
 import { get, set } from 'idb-keyval';
 import { MD5, enc } from 'crypto-js';
 
-// e.request is a stream, so we have to
-// read every chunk, write to a string and return it
 const getBody = async (e) => {
   const blob = await e.request.blob();
   const body = await blob.text();
@@ -77,4 +75,5 @@ function writeToCache(hash, queryResult) {
   set(hash, queryResult)
     .then(() => console.log('It worked!'))
     .catch((err) => console.log('It failed!', err));
+
 }
