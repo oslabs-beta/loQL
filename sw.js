@@ -1,8 +1,11 @@
 import { sw_log, sw_error_log } from './index';
 import { get, set } from 'idb-keyval';
 import { MD5, enc } from 'crypto-js';
+  import { parse } from 'graphql/language/parser'; // added by JR
+
 
 const getBody = async (e) => {
+  // console.log('e.request in getBody =', e.request);
   const blob = await e.request.blob();
   const body = await blob.text();
   return body;
@@ -36,7 +39,13 @@ self.addEventListener('fetch', async (fetchEvent) => {
 
 // The main wrapper function for our caching solution
 async function runCachingLogic(urlObject, method, headers, body) {
-  let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
+  let query = method === 'GET' ? getQueryFromUrl(urlObject) : body; // added .query
+  // added by JR
+  // console.log('body.query =', body.query);
+  // console.log('query before AST =', query);
+  const AST = parse(query);
+  console.log('AST of query =', AST);
+
   const hashedQuery = hashQuery(query);
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData) {

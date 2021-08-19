@@ -19,6 +19,7 @@
   "homepage": "https://github.com/oslabs-beta/loQL#readme",
   "dependencies": {
     "crypto-js": "^4.1.1",
+    "graphql": "^15.5.1",
     "idb-keyval": "^5.1.3"
   }
 }
