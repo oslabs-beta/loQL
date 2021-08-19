@@ -1,3 +1,4 @@
+import { sw_log } from './index';
 import { get, set } from 'idb-keyval';
 import { MD5, enc } from 'crypto-js';
 
@@ -14,9 +15,16 @@ const getBody = async (e) => {
 self.addEventListener('fetch', async (fetchEvent) => {
   const { url, method, headers } = fetchEvent.request;
   if (url.endsWith('/graphql')) {
-    const body = await getBody(fetchEvent);
-    const queryResult = await runCachingLogic(url, method, headers, body);
-    fetchEvent.respondWith(queryResult);
+    async function fetchAndGetResponse() {
+      try {
+        const body = await getBody(fetchEvent);
+        const queryResult = await runCachingLogic(url, method, headers, body);
+        return new Response(JSON.stringify(queryResult), { status: 200 });
+      } catch (err) {
+        sw_log('Service worker failure!');
+      }
+    }
+    fetchEvent.respondWith(fetchAndGetResponse());
   }
 });
 
@@ -25,7 +33,7 @@ async function runCachingLogic(url, method, headers, body) {
   const hashedQuery = hashQuery(body);
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData) {
-    console.log('Fetched from cache');
+    sw_log('Fetched from cache');
     console.log(cachedData);
     return cachedData;
   } else {
@@ -43,7 +51,7 @@ function hashQuery(clientQuery) {
 
 // Checks for existence of hashed query in IDB
 async function checkQueryExists(hashedQuery) {
-  console.log(hashedQuery);
+  sw_log(hashedQuery);
   try {
     const val = await get(hashedQuery);
     return val;
