@@ -12,11 +12,17 @@ const getBody = async (e) => {
 // run our caching logic, passing in information about the request.
 self.addEventListener('fetch', async (fetchEvent) => {
   const { url, method, headers } = fetchEvent.request;
-  if (url.endsWith('/graphql')) {
+  const urlObject = new URL(url);
+  if (urlObject.pathname.endsWith('/graphql')) {
     async function fetchAndGetResponse() {
       try {
         const body = await getBody(fetchEvent);
-        const queryResult = await runCachingLogic(url, method, headers, body);
+        const queryResult = await runCachingLogic(
+          urlObject,
+          method,
+          headers,
+          body
+        );
         return new Response(JSON.stringify(queryResult), { status: 200 });
       } catch (err) {
         sw_log('Service worker failure!');
@@ -27,18 +33,28 @@ self.addEventListener('fetch', async (fetchEvent) => {
 });
 
 // The main wrapper function for our caching solution
-async function runCachingLogic(url, method, headers, body) {
-  const hashedQuery = hashQuery(body);
+async function runCachingLogic(urlObject, method, headers, body) {
+  let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
+  const hashedQuery = hashQuery(query);
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData) {
     sw_log('Fetched from cache');
-    console.log(cachedData);
     return cachedData;
   } else {
-    const data = await executeQuery(url, method, headers, body);
+    const data = await executeQuery(urlObject.href, method, headers, body);
     writeToCache(hashedQuery, data);
     return data;
   }
+}
+
+// If a GET method, we need to pull the query off the url
+// and use that instead of the POST body
+// EG: 'http://localhost:4000/graphql?query=query\{human(input:\{id:"1"\})\{name\}\}'
+function getQueryFromUrl(urlObject) {
+  const query = decodeURI(urlObject.searchParams.get('query'));
+  if (!query)
+    throw new Error(`This HTTP GET request is not a valid GQL request: ${url}`);
+  return query;
 }
 
 // Hash the query and convert to hex string
@@ -49,7 +65,6 @@ function hashQuery(clientQuery) {
 
 // Checks for existence of hashed query in IDB
 async function checkQueryExists(hashedQuery) {
-  sw_log(hashedQuery);
   try {
     const val = await get(hashedQuery);
     return val;
@@ -62,7 +77,11 @@ async function checkQueryExists(hashedQuery) {
 // the query and return the result.
 async function executeQuery(url, method, headers, body) {
   try {
-    const response = await fetch(url, { method, headers, body });
+    const options = { method, headers };
+    if (method === 'POST') {
+      options.body = body;
+    }
+    const response = await fetch(url, options);
     const data = await response.json();
     return data;
   } catch (err) {
@@ -73,7 +92,6 @@ async function executeQuery(url, method, headers, body) {
 // Write the result into cache
 function writeToCache(hash, queryResult) {
   set(hash, queryResult)
-    .then(() => console.log('It worked!'))
-    .catch((err) => console.log('It failed!', err));
-
+    .then(() => sw_log('Wrote response to cache.'))
+    .catch((err) => console.error('Could not write response to cache', err));
 }

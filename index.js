@@ -1,5 +1,7 @@
-export const sw_log = (msg) =>
-  console.log(`%c ${msg}`, 'color: green; font-weight: bold');
+export const sw_log = (...strings) =>
+  strings.forEach((msg) => {
+    console.log(`%c ${msg}`, 'color: green; font-weight: bold');
+  });
 
 export const register = () => {
   if (navigator.serviceWorker) {
@@ -21,4 +23,3 @@ export const register = () => {
 export const installing = () => {
 
 }*/
-
