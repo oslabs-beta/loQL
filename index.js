@@ -23,8 +23,3 @@ export const register = () => {
     sw_log('Service workers are not possible on this browser.');
   }
 };
-
-/*
-export const installing = () => {
-
-}*/

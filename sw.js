@@ -1,9 +1,7 @@
 import { sw_log, sw_error_log } from './index';
 import { get, set } from 'idb-keyval';
 import { MD5, enc } from 'crypto-js';
-
-let start;
-let timeElasped;
+import Metrics from "./Metrics";
 
 const getBody = async (e) => {
   const blob = await e.request.blob();
@@ -14,6 +12,7 @@ const getBody = async (e) => {
 // Listen for fetch events, and for those to the /graphql endpoint,
 // run our caching logic, passing in information about the request.
 self.addEventListener('fetch', async (fetchEvent) => {
+  let metrics = new Metrics();
   const clone = fetchEvent.request.clone();
   const { url, method, headers } = clone;
   const urlObject = new URL(url);
@@ -21,12 +20,14 @@ self.addEventListener('fetch', async (fetchEvent) => {
     async function fetchAndGetResponse() {
       try {
         const body = await getBody(fetchEvent);
-        const queryResult = await runCachingLogic(
+        const [queryResult, hashedQuery] = await runCachingLogic(
           urlObject,
           method,
           headers,
-          body
+          body,
+          metrics
         );
+        metrics.save(hashedQuery);
         return new Response(JSON.stringify(queryResult), { status: 200 });
       } catch (err) {
         sw_error_log('There was an error in the caching logic!', err.message);
@@ -38,17 +39,18 @@ self.addEventListener('fetch', async (fetchEvent) => {
 });
 
 // The main wrapper function for our caching solution
-async function runCachingLogic(urlObject, method, headers, body) {
+async function runCachingLogic(urlObject, method, headers, body, metrics) {
   let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
   const hashedQuery = hashQuery(query);
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData) {
+    metrics.isCached = true;
     sw_log('Fetched from cache');
-    return cachedData;
+    return [cachedData, hashedQuery];
   } else {
     const data = await executeQuery(urlObject.href, method, headers, body);
     writeToCache(hashedQuery, data);
-    return data;
+    return [data, hashedQuery];
   }
 }
 
