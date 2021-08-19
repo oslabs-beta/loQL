@@ -1,4 +1,4 @@
-import { sw_log } from './index';
+import { sw_log, sw_error_log } from './index';
 import { get, set } from 'idb-keyval';
 import { MD5, enc } from 'crypto-js';
 
@@ -11,7 +11,8 @@ const getBody = async (e) => {
 // Listen for fetch events, and for those to the /graphql endpoint,
 // run our caching logic, passing in information about the request.
 self.addEventListener('fetch', async (fetchEvent) => {
-  const { url, method, headers } = fetchEvent.request;
+  const clone = fetchEvent.request.clone();
+  const { url, method, headers } = clone;
   const urlObject = new URL(url);
   if (urlObject.pathname.endsWith('/graphql')) {
     async function fetchAndGetResponse() {
@@ -25,7 +26,8 @@ self.addEventListener('fetch', async (fetchEvent) => {
         );
         return new Response(JSON.stringify(queryResult), { status: 200 });
       } catch (err) {
-        sw_log('Service worker failure!');
+        sw_error_log('There was an error in the caching logic!', err.message);
+        return await fetch(clone);
       }
     }
     fetchEvent.respondWith(fetchAndGetResponse());
@@ -69,7 +71,7 @@ async function checkQueryExists(hashedQuery) {
     const val = await get(hashedQuery);
     return val;
   } catch (err) {
-    console.error(err);
+    sw_error_log('Error getting query from IDB', err.message);
   }
 }
 
@@ -85,7 +87,7 @@ async function executeQuery(url, method, headers, body) {
     const data = await response.json();
     return data;
   } catch (err) {
-    console.error(err);
+    sw_error_log('Error executing query', err.message);
   }
 }
 
@@ -93,5 +95,7 @@ async function executeQuery(url, method, headers, body) {
 function writeToCache(hash, queryResult) {
   set(hash, queryResult)
     .then(() => sw_log('Wrote response to cache.'))
-    .catch((err) => console.error('Could not write response to cache', err));
+    .catch((err) =>
+      sw_error_log('Could not write response to cache', err.message)
+    );
 }
