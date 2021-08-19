@@ -46,6 +46,7 @@ async function runCachingLogic(urlObject, method, headers, body) {
   const AST = parse(query);
   console.log('AST of query =', AST);
 
+
   const hashedQuery = hashQuery(query);
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData) {
@@ -108,3 +109,27 @@ function writeToCache(hash, queryResult) {
       sw_error_log('Could not write response to cache', err.message)
     );
 }
+
+// Extracts metadata of query from client
+function extractMetadata(ASTquery) {
+  //create empty metadata Object 
+  //create operationType variable
+  //create model variable
+  //create argument variable
+  //start iterating/searching thorugh the AST object to find relevant properties
+    //these relevant properties include: operationType, model, *selection*:
+    //selection property of AST object is an array of arrays which will include the fields
+    // operationType is available at top level
+    // arguments is available at top level
+    // model is defined in the very first selection
+    //that we need to save in the metadata
+    // number of nested selections = query depth level 
+      // e.g. selection with 3 fields, 1 of which is another depth would have
+        // 0 index = name of field
+        // 1 index = name of field
+        // 2 index = name of field and another selection
+  // return metadata
+
+}
+
+// store this metadata along with the query result into indexDB
