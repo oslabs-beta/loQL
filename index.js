@@ -24,7 +24,10 @@ export const register = () => {
   }
 };
 
+<<<<<<< Updated upstream
 /*
 export const installing = () => {
 
 }*/
+=======
+>>>>>>> Stashed changes

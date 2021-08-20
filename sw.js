@@ -1,6 +1,10 @@
 import { sw_log, sw_error_log } from './index';
 import { get, set } from 'idb-keyval';
+<<<<<<< Updated upstream
 import { MD5, enc } from 'crypto-js';
+=======
+import Metrics from './Metrics';
+>>>>>>> Stashed changes
 
 const getBody = async (e) => {
   const blob = await e.request.blob();
@@ -37,7 +41,7 @@ self.addEventListener('fetch', async (fetchEvent) => {
 // The main wrapper function for our caching solution
 async function runCachingLogic(urlObject, method, headers, body) {
   let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
-  const hashedQuery = hashQuery(query);
+  const hashedQuery = hash(query);
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData) {
     sw_log('Fetched from cache');
@@ -57,12 +61,6 @@ function getQueryFromUrl(urlObject) {
   if (!query)
     throw new Error(`This HTTP GET request is not a valid GQL request: ${url}`);
   return query;
-}
-
-// Hash the query and convert to hex string
-function hashQuery(clientQuery) {
-  const hashedQuery = MD5(JSON.stringify(clientQuery));
-  return hashedQuery.toString(enc.hex);
 }
 
 // Checks for existence of hashed query in IDB
@@ -98,4 +96,17 @@ function writeToCache(hash, queryResult) {
     .catch((err) =>
       sw_error_log('Could not write response to cache', err.message)
     );
+}
+
+// Hash a query into a simple string
+function hash(str) {
+  let i = str.length;
+  let hash1 = 5381;
+  let hash2 = 52711;
+  while (i--) {
+    const char = str.charCodeAt(i);
+    hash1 = (hash1 * 33) ^ char;
+    hash2 = (hash2 * 33) ^ char;
+  }
+  return (hash1 >>> 0) * 4096 + (hash2 >>> 0);
 }
