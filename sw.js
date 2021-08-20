@@ -1,10 +1,6 @@
 import { sw_log, sw_error_log } from './index';
 import { get, set } from 'idb-keyval';
-<<<<<<< Updated upstream
-import { MD5, enc } from 'crypto-js';
-=======
 import Metrics from './Metrics';
->>>>>>> Stashed changes
 
 const getBody = async (e) => {
   const blob = await e.request.blob();
