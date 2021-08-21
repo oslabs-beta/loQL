@@ -1,13 +1,7 @@
 import { sw_log, sw_error_log } from './index';
-import { get, set } from 'idb-keyval';
+import { get, set } from './db';
 import { MD5, enc } from 'crypto-js';
 import Metrics from "./Metrics";
-
-const getBody = async (e) => {
-  const blob = await e.request.blob();
-  const body = await blob.text();
-  return body;
-};
 
 // Listen for fetch events, and for those to the /graphql endpoint,
 // run our caching logic, passing in information about the request.
@@ -38,6 +32,13 @@ self.addEventListener('fetch', async (fetchEvent) => {
   }
 });
 
+// Gets the body from the request and returns it
+const getBody = async (e) => {
+  const blob = await e.request.blob();
+  const body = await blob.text();
+  return body;
+};
+
 // The main wrapper function for our caching solution
 async function runCachingLogic(urlObject, method, headers, body, metrics) {
   let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
@@ -58,7 +59,7 @@ async function runCachingLogic(urlObject, method, headers, body, metrics) {
 // and use that instead of the POST body
 // EG: 'http://localhost:4000/graphql?query=query\{human(input:\{id:"1"\})\{name\}\}'
 function getQueryFromUrl(urlObject) {
-  const query = decodeURI(urlObject.searchParams.get('query'));
+  const query = decodeURI(urlObject.searchParams.get('queries', 'query'));
   if (!query)
     throw new Error(`This HTTP GET request is not a valid GQL request: ${url}`);
   return query;
@@ -73,7 +74,7 @@ function hashQuery(clientQuery) {
 // Checks for existence of hashed query in IDB
 async function checkQueryExists(hashedQuery) {
   try {
-    const val = await get(hashedQuery);
+    const val = await get('queries', hashedQuery);
     return val;
   } catch (err) {
     sw_error_log('Error getting query from IDB', err.message);
@@ -98,7 +99,7 @@ async function executeQuery(url, method, headers, body) {
 
 // Write the result into cache
 function writeToCache(hash, queryResult) {
-  set(hash, queryResult)
+  set('queries', hash, queryResult)
     .then(() => sw_log('Wrote response to cache.'))
     .catch((err) =>
       sw_error_log('Could not write response to cache', err.message)
