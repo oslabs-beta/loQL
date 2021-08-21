@@ -7,6 +7,10 @@ export default class Metrics {
         this.start = Date.now();
     };
 
+    /* 
+    Save to IDB, the last time the query was run to the API,
+    and the speed of the query. Keep cached queries and uncached queries separate.
+    */
     async save(hash) {
         const timeElapsed = (Date.now() - this.start) / 1000;
         const lastRun = new Date();
