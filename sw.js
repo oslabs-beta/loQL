@@ -73,8 +73,10 @@ function getQueryFromUrl(urlObject) {
 
 // Hash the query and convert to hex string
 function hashQuery(clientQuery) {
-  const hashedQuery = MD5(JSON.stringify(clientQuery));
-  return hashedQuery.toString(enc.hex);
+  //const hashedQuery = MD5(JSON.stringify(clientQuery));
+  //return hashedQuery.toString(enc.hex);
+  const hashedQuery = ourMD5(JSON.stringify(clientQuery));
+  return hashedQuery;
 }
 
 // Checks for existence of hashed query in IDB
@@ -131,7 +133,15 @@ function extractMetadata(ASTquery) {
   // 1 index = name of field
   // 2 index = name of field and another selection
   // return metadata
-
+  
 }
 
 // store this metadata along with the query result into indexDB
+
+//check if top level operation is query, if so invoke caching logic and immediately pass along request
+function operationTypeCheck(query)  {
+//if string "query" is found before first occurence of curcly brace, then operation type is query
+return query.includes('query') && ( query.indexOf('query') < query.indexOf('{') )
+  ? console.log('This operation is a query')
+  : console.log('This operation is not a query');
+}
