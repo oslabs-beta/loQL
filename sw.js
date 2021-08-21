@@ -1,4 +1,4 @@
-import { sw_log, sw_error_log } from './index';
+import { sw_log, sw_error_log } from './loggers';
 import { get, set } from './db';
 import { MD5, enc } from 'crypto-js';
 import Metrics from './Metrics';
@@ -42,7 +42,7 @@ const getBody = async (e) => {
 // The main wrapper function for our caching solution
 async function runCachingLogic(urlObject, method, headers, body, metrics) {
   let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
-  const hashedQuery = hashQuery(query);
+  const hashedQuery = hash(query);
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData) {
     metrics.isCached = true;
