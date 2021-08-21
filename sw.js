@@ -1,7 +1,9 @@
 import { sw_log, sw_error_log } from './index';
 import { get, set } from 'idb-keyval';
 import { MD5, enc } from 'crypto-js';
-  import { parse } from 'graphql/language/parser'; // added by JR
+import { ourMD5 } from './md5';
+import { parse } from 'graphql/language/parser'; // added by JR
+
 
 
 const getBody = async (e) => {
@@ -39,7 +41,7 @@ self.addEventListener('fetch', async (fetchEvent) => {
 
 // The main wrapper function for our caching solution
 async function runCachingLogic(urlObject, method, headers, body) {
-  let query = method === 'GET' ? getQueryFromUrl(urlObject) : body; // added .query
+  const query = method === 'GET' ? getQueryFromUrl(urlObject) : body; // added .query
   // added by JR
   // console.log('body.query =', body.query);
   // console.log('query before AST =', query);
@@ -117,17 +119,17 @@ function extractMetadata(ASTquery) {
   //create model variable
   //create argument variable
   //start iterating/searching thorugh the AST object to find relevant properties
-    //these relevant properties include: operationType, model, *selection*:
-    //selection property of AST object is an array of arrays which will include the fields
-    // operationType is available at top level
-    // arguments is available at top level
-    // model is defined in the very first selection
-    //that we need to save in the metadata
-    // number of nested selections = query depth level 
-      // e.g. selection with 3 fields, 1 of which is another depth would have
-        // 0 index = name of field
-        // 1 index = name of field
-        // 2 index = name of field and another selection
+  //these relevant properties include: operationType, model, *selection*:
+  //selection property of AST object is an array of arrays which will include the fields
+  // operationType is available at top level
+  // arguments is available at top level
+  // model is defined in the very first selection
+  //that we need to save in the metadata
+  // number of nested selections = query depth level 
+  // e.g. selection with 3 fields, 1 of which is another depth would have
+  // 0 index = name of field
+  // 1 index = name of field
+  // 2 index = name of field and another selection
   // return metadata
 
 }
