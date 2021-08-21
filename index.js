@@ -1,7 +1,18 @@
+import { setMany } from './db';
 import { sw_log, sw_error_log } from './loggers';
 
-export const register = () => {
+// Register service worker pulled in during webpack build step.
+// And create settings in IDB for service worker passed during registration step. Only create settings that are valid.
+export const validSettings = ['useMetrics'];
+export const register = async (settings) => {
   if (navigator.serviceWorker) {
+    await setMany(
+      'gql-store',
+      'settings',
+      Object.entries(settings).filter(([key, val]) =>
+        validSettings.includes(key)
+      )
+    );
     navigator.serviceWorker
       .register('./sw.js')
       .then((_) => {

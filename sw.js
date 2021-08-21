@@ -2,6 +2,12 @@ import { sw_log, sw_error_log } from './loggers';
 import { get, set } from './db';
 import { MD5, enc } from 'crypto-js';
 import Metrics from './Metrics';
+import { validSettings } from './index';
+
+// Grab settings from IDB set during registration.
+self.addEventListener('install', async () => {
+  await Promise.all(validSettings.map((setting) => get('settings', setting)));
+});
 
 // Listen for fetch events, and for those to the /graphql endpoint,
 // run our caching logic, passing in information about the request.
