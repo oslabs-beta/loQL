@@ -4,9 +4,20 @@ import { MD5, enc } from 'crypto-js';
 import Metrics from './Metrics';
 import { validSettings } from './index';
 
-// Grab settings from IDB set during registration.
-self.addEventListener('install', async () => {
-  await Promise.all(validSettings.map((setting) => get('settings', setting)));
+// Grab settings from IDB set during activation.
+// Do this before registering our event listeners.
+self.addEventListener('activate', async () => {
+  try {
+    const settings = await Promise.all(
+      validSettings.map(async (setting) => {
+        const result = await get('settings', setting);
+        return { [setting]: result };
+      })
+    );
+    sw_log('Service worker settings initialized.');
+  } catch (err) {
+    sw_error_log('Could not initialize service worker settings.');
+  }
 });
 
 // Listen for fetch events, and for those to the /graphql endpoint,
