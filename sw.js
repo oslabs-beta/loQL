@@ -1,11 +1,10 @@
 import { sw_log, sw_error_log } from './loggers';
 import { get, set } from './db';
-import { MD5, enc } from 'crypto-js';
-<<<<<<< HEAD
 import { ourMD5 } from './md5';
 import { parse } from 'graphql/language/parser'; // added by JR
 import { visit } from 'graphql';
-
+import Metrics from './Metrics';
+import { validSettings } from './index';
 
 
 const getBody = async (e) => {
@@ -14,9 +13,8 @@ const getBody = async (e) => {
   const body = await blob.text();
   return body;
 };
-=======
-import Metrics from './Metrics';
-import { validSettings } from './index';
+
+
 
 // Grab settings from IDB set during activation.
 // Do this before registering our event listeners.
@@ -33,12 +31,12 @@ self.addEventListener('activate', async () => {
     sw_error_log('Could not initialize service worker settings.');
   }
 });
->>>>>>> 32deeab9f3a6c2d08136a588b2e538e01498b2b6
+
 
 // Listen for fetch events, and for those to the /graphql endpoint,
 // run our caching logic, passing in information about the request.
 self.addEventListener('fetch', async (fetchEvent) => {
-  let metrics = new Metrics();
+  const metrics = new Metrics();
   const clone = fetchEvent.request.clone();
   const { url, method, headers } = clone;
   const urlObject = new URL(url);
@@ -74,11 +72,18 @@ const getBody = async (e) => {
 // The main wrapper function for our caching solution
 async function runCachingLogic(urlObject, method, headers, body, metrics) {
   let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
+  const queryParams = [urlObject, method, headers, body, metrics];
   const hashedQuery = hash(query);
   const cachedData = await checkQueryExists(hashedQuery);
+  //if cached data exists, send to client
   if (cachedData) {
     metrics.isCached = true;
     sw_log('Fetched from cache');
+    // invoke async without await updateCache
+    executeAndUpdate(queryParams, hashedQuery);
+      // inside of that function
+      // you invoke executeQuery
+      // and result of that executeQuery, you writeToCache
     return [cachedData, hashedQuery];
   } else {
     const data = await executeQuery(urlObject.href, method, headers, body);
@@ -144,3 +149,18 @@ function hash(str) {
   }
   return (hash1 >>> 0) * 4096 + (hash2 >>> 0);
 }
+
+/*Cache-update functionality (part of config object)
+When a request comes in from the client, deliver the content from the cache (if possible) as usual.
+In addition to the normal logic, even if the response is already in the cache, follow through with 
+sending the request to the server, updating the cache upon receipt of response.
+*/
+async function executeAndUpdate(queryParams, hashedQuery) {
+  //wait for execution of query and assign results to data
+  const data = await executeQuery(...queryParams);
+  //update cache
+  //currently not doing any type of check to see if "new" result is actually different from old data
+  writeToCache(hashedQuery, data);
+  return console.log('The value of: ', hashedQuery, 'has been updated.' );
+}
+
