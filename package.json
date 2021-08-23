@@ -1,4 +1,4 @@
-{
+ {
   "name": "loql",
   "version": "1.0.0",
   "description": "",
@@ -11,7 +11,7 @@
     "url": "git+https://github.com/oslabs-beta/loQL.git"
   },
   "keywords": [],
-  "author": "Harrison Cramer <kingofcramers.dev@gmail.com> (https://github.com/harrisoncramer), Andrew Lee <lolfill0104@gmail.com> (https://github.com/lolfill)",
+  "author": "Harrison Cramer <kingofcramers.dev@gmail.com> (https://github.com/harrisoncramer), Andrew Lee <lolfill0104@gmail.com> (https://github.com/lolfill), Konstantin Hamilton <konst@ntinh.am> (https://github.com/uitie)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/oslabs-beta/loQL/issues"
@@ -19,11 +19,6 @@
   "homepage": "https://github.com/oslabs-beta/loQL#readme",
   "dependencies": {
     "crypto-js": "^4.1.1",
-<<<<<<< HEAD
-    "graphql": "^15.5.1",
-    "idb-keyval": "^5.1.3"
-=======
     "idb": "^6.1.2"
->>>>>>> 32deeab9f3a6c2d08136a588b2e538e01498b2b6
   }
 }
