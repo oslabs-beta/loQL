@@ -11,6 +11,8 @@ const dbPromise = openDB('gql-store', 1, {
 
 // Functions for interacting with metrics ObjectStore
 export async function get(name, key) {
+  console.log("Name is", name)
+  console.log("Key is", key)
   return (await dbPromise).get(name, key);
 }
 

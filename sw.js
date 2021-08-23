@@ -1,7 +1,8 @@
 import { sw_log, sw_error_log } from './loggers';
 import { get, set } from './db';
 import { MD5, enc } from 'crypto-js';
-import Metrics from './Metrics';
+
+import { Metrics, avgDiff } from "./Metrics";
 import { validSettings } from './index';
 
 // Grab settings from IDB set during activation.
@@ -21,7 +22,7 @@ self.addEventListener('activate', async () => {
 });
 
 // Listen for fetch events, and for those to the /graphql endpoint,
-// run our caching logic, passing in information about the request.
+// run our caching logic  , passing in information about the request.
 self.addEventListener('fetch', async (fetchEvent) => {
   let metrics = new Metrics();
   const clone = fetchEvent.request.clone();
@@ -39,6 +40,8 @@ self.addEventListener('fetch', async (fetchEvent) => {
           metrics
         );
         metrics.save(hashedQuery);
+        // avgDiff(hashedQuery);
+        // if options.showSpeed call avgDiff(hashedQuery)
         return new Response(JSON.stringify(queryResult), { status: 200 });
       } catch (err) {
         sw_error_log('There was an error in the caching logic!', err.message);
@@ -117,7 +120,6 @@ function writeToCache(hash, queryResult) {
     );
 }
 
-// Hash a query into a simple string
 function hash(str) {
   let i = str.length;
   let hash1 = 5381;
