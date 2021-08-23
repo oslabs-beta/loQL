@@ -5,7 +5,7 @@ import { avgDiff, cachedAvg, uncachedAvg } from "./Metrics";
 
 // Register service worker pulled in during webpack build step.
 // And create settings in IDB for service worker passed during registration step. Only create settings that are valid.
-export const validSettings = ['useMetrics', 'optimize'];
+export const validSettings = ['useMetrics', 'optimize', 'cacheMethod'];
 export const register = async (settings) => {
   if (navigator.serviceWorker) {
     await setMany(
