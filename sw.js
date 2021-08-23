@@ -1,8 +1,8 @@
 import { sw_log, sw_error_log } from './index';
 import { get, set } from 'idb-keyval';
-import { MD5, enc } from 'crypto-js';
-import { ourMD5 } from './md5';
-import { parse } from 'graphql/language/parser'; // added by JR
+//import { MD5, enc } from 'crypto-js';
+//import { ourMD5 } from './md5';
+//import { parse } from 'graphql/language/parser'; // added by JR
 
 
 
@@ -75,8 +75,8 @@ function getQueryFromUrl(urlObject) {
 function hashQuery(clientQuery) {
   //const hashedQuery = MD5(JSON.stringify(clientQuery));
   //return hashedQuery.toString(enc.hex);
-  const hashedQuery = ourMD5(JSON.stringify(clientQuery));
-  return hashedQuery;
+  //const hashedQuery = ourMD5(JSON.stringify(clientQuery));
+  //return hashedQuery;
 }
 
 // Checks for existence of hashed query in IDB
