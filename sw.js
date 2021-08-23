@@ -1,12 +1,13 @@
 import { sw_log, sw_error_log } from './index';
 import { get, set } from './db';
 import { MD5, enc } from 'crypto-js';
-import Metrics from "./Metrics";
+import { ourMD5 } from './md5.js';
+import Metrics from './Metrics';
 
 // Listen for fetch events, and for those to the /graphql endpoint,
 // run our caching logic, passing in information about the request.
 self.addEventListener('fetch', async (fetchEvent) => {
-  let metrics = new Metrics();
+  const metrics = new Metrics();
   const clone = fetchEvent.request.clone();
   const { url, method, headers } = clone;
   const urlObject = new URL(url);
@@ -41,7 +42,7 @@ const getBody = async (e) => {
 
 // The main wrapper function for our caching solution
 async function runCachingLogic(urlObject, method, headers, body, metrics) {
-  let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
+  const query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
   const hashedQuery = hashQuery(query);
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData) {
@@ -69,8 +70,8 @@ function getQueryFromUrl(urlObject) {
 function hashQuery(clientQuery) {
   //const hashedQuery = MD5(JSON.stringify(clientQuery));
   //return hashedQuery.toString(enc.hex);
-  //const hashedQuery = ourMD5(JSON.stringify(clientQuery));
-  //return hashedQuery;
+  const hashedQuery = ourMD5(JSON.stringify(clientQuery));
+  return hashedQuery;
 }
 
 // Checks for existence of hashed query in IDB
@@ -135,7 +136,7 @@ function extractMetadata(ASTquery) {
 //check if top level operation is query, if so invoke caching logic and immediately pass along request
 function operationTypeCheck(query)  {
 //if string "query" is found before first occurence of curcly brace, then operation type is query
-return query.includes('query') && ( query.indexOf('query') < query.indexOf('{') )
-  ? console.log('This operation is a query')
-  : console.log('This operation is not a query');
+  return query.includes('query') && ( query.indexOf('query') < query.indexOf('{') )
+    ? console.log('This operation is a query')
+    : console.log('This operation is not a query');
 }
