@@ -1,20 +1,6 @@
 import { sw_log, sw_error_log } from './loggers';
 import { get, set } from './db';
 import { MD5, enc } from 'crypto-js';
-<<<<<<< HEAD
-import { ourMD5 } from './md5';
-import { parse } from 'graphql/language/parser'; // added by JR
-import { visit } from 'graphql';
-
-
-
-const getBody = async (e) => {
-  // console.log('e.request in getBody =', e.request);
-  const blob = await e.request.blob();
-  const body = await blob.text();
-  return body;
-};
-=======
 import Metrics from './Metrics';
 import { validSettings } from './index';
 
@@ -33,7 +19,6 @@ self.addEventListener('activate', async () => {
     sw_error_log('Could not initialize service worker settings.');
   }
 });
->>>>>>> 32deeab9f3a6c2d08136a588b2e538e01498b2b6
 
 // Listen for fetch events, and for those to the /graphql endpoint,
 // run our caching logic, passing in information about the request.
@@ -72,27 +57,9 @@ const getBody = async (e) => {
 };
 
 // The main wrapper function for our caching solution
-<<<<<<< HEAD
-async function runCachingLogic(urlObject, method, headers, body) {
-  const query = method === 'GET' ? getQueryFromUrl(urlObject) : body; // added .query
-  // added by JR
-  // console.log('body.query =', body.query);
-  // console.log('query before AST =', query);
-  const AST = parse(query); // --> put it once we know it wasn't already done
-  console.log('AST of query =', AST);
-  console.log('AST.definitions =', AST.definitions);
-  console.log('AST from top query =', AST.definitions[0].selectionSet.selections[0]);
-  const metadata = extractMetadata(AST);
-  console.log(metadata);
-
-
-
-  const hashedQuery = hashQuery(query);
-=======
 async function runCachingLogic(urlObject, method, headers, body, metrics) {
   let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
   const hashedQuery = hash(query);
->>>>>>> 32deeab9f3a6c2d08136a588b2e538e01498b2b6
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData) {
     metrics.isCached = true;
@@ -115,17 +82,6 @@ function getQueryFromUrl(urlObject) {
   return query;
 }
 
-<<<<<<< HEAD
-// Hash the query and convert to hex string
-function hashQuery(clientQuery) {
-  //const hashedQuery = MD5(JSON.stringify(clientQuery));
-  //return hashedQuery.toString(enc.hex);
-  const hashedQuery = ourMD5(JSON.stringify(clientQuery));
-  return hashedQuery;
-}
-
-=======
->>>>>>> 32deeab9f3a6c2d08136a588b2e538e01498b2b6
 // Checks for existence of hashed query in IDB
 async function checkQueryExists(hashedQuery) {
   try {
