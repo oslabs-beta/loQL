@@ -3,6 +3,7 @@ import { get, set } from 'idb-keyval';
 import { MD5, enc } from 'crypto-js';
 import { ourMD5 } from './md5';
 import { parse } from 'graphql/language/parser'; // added by JR
+import { visit } from 'graphql';
 
 
 
@@ -45,8 +46,13 @@ async function runCachingLogic(urlObject, method, headers, body) {
   // added by JR
   // console.log('body.query =', body.query);
   // console.log('query before AST =', query);
-  const AST = parse(query);
+  const AST = parse(query); // --> put it once we know it wasn't already done
   console.log('AST of query =', AST);
+  console.log('AST.definitions =', AST.definitions);
+  console.log('AST from top query =', AST.definitions[0].selectionSet.selections[0]);
+  const metadata = extractMetadata(AST);
+  console.log(metadata);
+
 
 
   const hashedQuery = hashQuery(query);
@@ -115,7 +121,7 @@ function writeToCache(hash, queryResult) {
 }
 
 // Extracts metadata of query from client
-function extractMetadata(ASTquery) {
+function extractMetadata(AST) {
   //create empty metadata Object 
   //create operationType variable
   //create model variable
@@ -133,7 +139,37 @@ function extractMetadata(ASTquery) {
   // 1 index = name of field
   // 2 index = name of field and another selection
   // return metadata
+
+  let operationType;
+  let model;
+  let argument;
+
+  const fieldValues = [];
+
+  visit(AST, {
+    // enter (node) {
+
+    // },
+    OperationDefinition(node) {
+      operationType = node.operation;
+    },
+    // SelectionSet: {
+    //   enter (node) {
+    //     const arguments = node.selections[0];
+    //   }
+    // }
+    Field: {
+      enter (node) {
+        // const fieldValues = [];
+        fieldValues.push(node.name.value);
+      }
+    }
+  })
   
+  model = fieldValues[0];
+
+  return { operationType, model }
+  // return { operationType, model, argument }
 }
 
 // store this metadata along with the query result into indexDB
