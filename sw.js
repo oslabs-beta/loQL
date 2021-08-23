@@ -161,69 +161,6 @@ function writeToCache(hash, queryResult) {
     );
 }
 
-<<<<<<< HEAD
-// Extracts metadata of query from client
-function extractMetadata(AST) {
-  //create empty metadata Object 
-  //create operationType variable
-  //create model variable
-  //create argument variable
-  //start iterating/searching thorugh the AST object to find relevant properties
-  //these relevant properties include: operationType, model, *selection*:
-  //selection property of AST object is an array of arrays which will include the fields
-  // operationType is available at top level
-  // arguments is available at top level
-  // model is defined in the very first selection
-  //that we need to save in the metadata
-  // number of nested selections = query depth level 
-  // e.g. selection with 3 fields, 1 of which is another depth would have
-  // 0 index = name of field
-  // 1 index = name of field
-  // 2 index = name of field and another selection
-  // return metadata
-
-  let operationType;
-  let model;
-  let argument;
-
-  const fieldValues = [];
-
-  visit(AST, {
-    // enter (node) {
-
-    // },
-    OperationDefinition(node) {
-      operationType = node.operation;
-    },
-    // SelectionSet: {
-    //   enter (node) {
-    //     const arguments = node.selections[0];
-    //   }
-    // }
-    Field: {
-      enter (node) {
-        // const fieldValues = [];
-        fieldValues.push(node.name.value);
-      }
-    }
-  })
-  
-  model = fieldValues[0];
-
-  return { operationType, model }
-  // return { operationType, model, argument }
-}
-
-// store this metadata along with the query result into indexDB
-
-//check if top level operation is query, if so invoke caching logic and immediately pass along request
-function operationTypeCheck(query)  {
-//if string "query" is found before first occurence of curcly brace, then operation type is query
-return query.includes('query') && ( query.indexOf('query') < query.indexOf('{') )
-  ? console.log('This operation is a query')
-  : console.log('This operation is not a query');
-}
-=======
 // Hash a query into a simple string
 function hash(str) {
   let i = str.length;
@@ -236,4 +173,3 @@ function hash(str) {
   }
   return (hash1 >>> 0) * 4096 + (hash2 >>> 0);
 }
->>>>>>> 32deeab9f3a6c2d08136a588b2e538e01498b2b6
