@@ -22,7 +22,7 @@ self.addEventListener('activate', async () => {
 // Listen for fetch events, and for those to the /graphql endpoint,
 // run our caching logic, passing in information about the request.
 self.addEventListener('fetch', async (fetchEvent) => {
-  let metrics = new Metrics();
+  const metrics = new Metrics();
   const clone = fetchEvent.request.clone();
   const { url, method, headers } = clone;
   const urlObject = new URL(url);
