@@ -1,7 +1,8 @@
 import { sw_log, sw_error_log } from './loggers';
 import { get, set } from './db';
-import Metrics from './Metrics';
+import { Metrics, avgDiff } from "./Metrics";
 import { validSettings } from './index';
+import { ourMD5 } from './md5';
 
 // Grab settings from IDB set during activation.
 // Do this before registering our event listeners.
@@ -20,7 +21,7 @@ self.addEventListener('activate', async () => {
 });
 
 // Listen for fetch events, and for those to the /graphql endpoint,
-// run our caching logic, passing in information about the request.
+// run our caching logic  , passing in information about the request.
 self.addEventListener('fetch', async (fetchEvent) => {
   const metrics = new Metrics();
   const clone = fetchEvent.request.clone();
@@ -38,6 +39,8 @@ self.addEventListener('fetch', async (fetchEvent) => {
           metrics
         );
         metrics.save(hashedQuery);
+        // avgDiff(hashedQuery);
+        // if options.showSpeed call avgDiff(hashedQuery)
         return new Response(JSON.stringify(queryResult), { status: 200 });
       } catch (err) {
         sw_error_log('There was an error in the caching logic!', err.message);
@@ -59,7 +62,7 @@ const getBody = async (e) => {
 async function runCachingLogic(urlObject, method, headers, body, metrics) {
   let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
   const queryParams = [urlObject, method, headers, body, metrics];
-  const hashedQuery = hash(query);
+  const hashedQuery = ourMD5(query);
   const cachedData = await checkQueryExists(hashedQuery);
   //if cached data exists, send to client
   if (cachedData) {
@@ -121,19 +124,6 @@ function writeToCache(hash, queryResult) {
     .catch((err) =>
       sw_error_log('Could not write response to cache', err.message)
     );
-}
-
-// Hash a query into a simple string
-function hash(str) {
-  let i = str.length;
-  let hash1 = 5381;
-  let hash2 = 52711;
-  while (i--) {
-    const char = str.charCodeAt(i);
-    hash1 = (hash1 * 33) ^ char;
-    hash2 = (hash2 * 33) ^ char;
-  }
-  return (hash1 >>> 0) * 4096 + (hash2 >>> 0);
 }
 
 /*Cache-update functionality (part of config object)
