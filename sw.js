@@ -1,7 +1,24 @@
-import { sw_log, sw_error_log } from './index';
+import { sw_log, sw_error_log } from './loggers';
 import { get, set } from './db';
 import { MD5, enc } from 'crypto-js';
-import Metrics from "./Metrics";
+import Metrics from './Metrics';
+import { validSettings } from './index';
+
+// Grab settings from IDB set during activation.
+// Do this before registering our event listeners.
+self.addEventListener('activate', async () => {
+  try {
+    const settings = await Promise.all(
+      validSettings.map(async (setting) => {
+        const result = await get('settings', setting);
+        return { [setting]: result };
+      })
+    );
+    sw_log('Service worker settings initialized.');
+  } catch (err) {
+    sw_error_log('Could not initialize service worker settings.');
+  }
+});
 
 // Listen for fetch events, and for those to the /graphql endpoint,
 // run our caching logic, passing in information about the request.
@@ -42,7 +59,7 @@ const getBody = async (e) => {
 // The main wrapper function for our caching solution
 async function runCachingLogic(urlObject, method, headers, body, metrics) {
   let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
-  const hashedQuery = hashQuery(query);
+  const hashedQuery = hash(query);
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData) {
     metrics.isCached = true;
@@ -63,12 +80,6 @@ function getQueryFromUrl(urlObject) {
   if (!query)
     throw new Error(`This HTTP GET request is not a valid GQL request: ${url}`);
   return query;
-}
-
-// Hash the query and convert to hex string
-function hashQuery(clientQuery) {
-  const hashedQuery = MD5(JSON.stringify(clientQuery));
-  return hashedQuery.toString(enc.hex);
 }
 
 // Checks for existence of hashed query in IDB
@@ -104,4 +115,17 @@ function writeToCache(hash, queryResult) {
     .catch((err) =>
       sw_error_log('Could not write response to cache', err.message)
     );
+}
+
+// Hash a query into a simple string
+function hash(str) {
+  let i = str.length;
+  let hash1 = 5381;
+  let hash2 = 52711;
+  while (i--) {
+    const char = str.charCodeAt(i);
+    hash1 = (hash1 * 33) ^ char;
+    hash2 = (hash2 * 33) ^ char;
+  }
+  return (hash1 >>> 0) * 4096 + (hash2 >>> 0);
 }
