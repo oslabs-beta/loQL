@@ -1,6 +1,6 @@
 import { setMany } from './db';
 import { sw_log, sw_error_log } from './loggers';
-import { avgDiff, cachedAvg, uncachedAvg } from './Metrics';
+import { avgDiff, cachedAvg, uncachedAvg, summary} from "./Metrics";
 
 // Register service worker pulled in during webpack build step.
 // And create settings in IDB for service worker passed during registration step. Only create settings that are valid.
@@ -43,4 +43,5 @@ export function setupMetrics() {
   window.avgDiff = avgDiff; // The total time saved for a particular query
   window.cachedAvg = cachedAvg; // The average speed for a particular query in the cache
   window.uncachedAvg = uncachedAvg; // The average speed for a particular query from the API
+  window.summary = summary; // Prints the number of cached queries, and information aobut each of them
 }

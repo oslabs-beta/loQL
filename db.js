@@ -35,6 +35,10 @@ export async function setMany(name, objectStore, keyValuePairs) {
   );
 }
 
+export async function getAll (name) {
+  return (await dbPromise).getAll(name);
+}
+
 export async function keys(name) {
   return (await dbPromise).getAllKeys(name);
 }
