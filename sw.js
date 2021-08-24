@@ -65,7 +65,9 @@ async function runCachingLogic(urlObject, method, headers, body, metrics) {
   if (cachedData && checkCachedQueryIsFresh(cachedData)) {
     metrics.isCached = true;
     sw_log('Fetched from cache');
-    executeAndUpdate(hashedQuery, [urlObject, method, headers, body, metrics]);
+    if(settings.cacheMethod === 'cache-network') {
+      executeAndUpdate(hashedQuery, [urlObject, method, headers, body, metrics]);
+    };
     return [cachedData, hashedQuery];
   } else {
     const data = await executeAndUpdate(hashedQuery, [
@@ -140,6 +142,7 @@ sending the request to the server, updating the cache upon receipt of response.
 */
 
 async function executeAndUpdate(hashedQuery, queryParams) {
+  //if within the settings store, cacheMethods is cache-only, then we just return
   const data = await executeQuery(...queryParams);
   // currently not doing any type of check to see if "new" result is actually different from old data
   writeToCache(hashedQuery, data);
