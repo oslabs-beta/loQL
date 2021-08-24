@@ -11,8 +11,6 @@ const dbPromise = openDB('gql-store', 1, {
 
 // Functions for interacting with metrics ObjectStore
 export async function get(name, key) {
-  console.log("Name is", name)
-  console.log("Key is", key)
   return (await dbPromise).get(name, key);
 }
 
@@ -35,6 +33,10 @@ export async function setMany(name, objectStore, keyValuePairs) {
     keyValuePairs.map(([val, key]) => transaction.store.put(key, val)),
     transaction.done
   );
+}
+
+export async function getAll (name) {
+  return (await dbPromise).getAll(name);
 }
 
 export async function keys(name) {
