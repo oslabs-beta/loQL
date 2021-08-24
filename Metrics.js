@@ -13,16 +13,15 @@ export class Metrics {
     */
     async save(hash) {
       const timeElapsed = (Date.now() - this.start);
-      const lastAPICall = new Date();
       const metrics = await get('metrics', hash).catch(sw_error_log);
       if (metrics === undefined) {
-        await set('metrics', hash, { uncachedSpeeds: [timeElapsed], cachedSpeeds: [], lastAPICall }).catch(sw_error_log);
+        await set('metrics', hash, { uncachedSpeeds: [timeElapsed], cachedSpeeds: [] }).catch(sw_error_log);
       } else {
           if (this.isCached) {
             await set('metrics', hash, { ...metrics, cachedSpeeds: metrics.cachedSpeeds.concat(timeElapsed) })
               .catch(sw_error_log);
           } else {
-            await set('metrics', hash, { ...metrics, uncachedSpeeds: metrics.uncachedSpeeds.concat(timeElapsed), lastAPICall })
+            await set('metrics', hash, { ...metrics, uncachedSpeeds: metrics.uncachedSpeeds.concat(timeElapsed) })
               .catch(sw_error_log);
           }
       }
