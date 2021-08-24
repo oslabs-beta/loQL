@@ -1,17 +1,18 @@
 import { sw_log, sw_error_log } from './loggers';
 import { get, set } from './db';
-import { Metrics, avgDiff } from "./Metrics";
+import { Metrics, avgDiff } from './Metrics';
 import { validSettings } from './index';
 import { ourMD5 } from './md5';
 
 // Grab settings from IDB set during activation.
 // Do this before registering our event listeners.
+let settings = {};
 self.addEventListener('activate', async () => {
   try {
-    const settings = await Promise.all(
+    await Promise.all(
       validSettings.map(async (setting) => {
         const result = await get('settings', setting);
-        return { [setting]: result };
+        settings[setting] = result;
       })
     );
     sw_log('Service worker settings initialized.');
@@ -39,8 +40,6 @@ self.addEventListener('fetch', async (fetchEvent) => {
           metrics
         );
         metrics.save(hashedQuery);
-        // avgDiff(hashedQuery);
-        // if options.showSpeed call avgDiff(hashedQuery)
         return new Response(JSON.stringify(queryResult), { status: 200 });
       } catch (err) {
         sw_error_log('There was an error in the caching logic!', err.message);
@@ -61,22 +60,21 @@ const getBody = async (e) => {
 // The main wrapper function for our caching solution
 async function runCachingLogic(urlObject, method, headers, body, metrics) {
   let query = method === 'GET' ? getQueryFromUrl(urlObject) : body;
-  const queryParams = [urlObject, method, headers, body, metrics];
   const hashedQuery = ourMD5(query);
   const cachedData = await checkQueryExists(hashedQuery);
-  //if cached data exists, send to client
-  if (cachedData) {
+  if (cachedData && checkCachedQueryIsFresh(cachedData)) {
     metrics.isCached = true;
     sw_log('Fetched from cache');
-    // invoke async without await updateCache
-    executeAndUpdate(queryParams, hashedQuery);
-      // inside of that function
-      // you invoke executeQuery
-      // and result of that executeQuery, you writeToCache
+    executeAndUpdate(hashedQuery, [urlObject, method, headers, body, metrics]);
     return [cachedData, hashedQuery];
   } else {
-    const data = await executeQuery(urlObject.href, method, headers, body);
-    writeToCache(hashedQuery, data);
+    const data = await executeAndUpdate(hashedQuery, [
+      urlObject,
+      method,
+      headers,
+      body,
+      metrics,
+    ]);
     return [data, hashedQuery];
   }
 }
@@ -94,22 +92,29 @@ function getQueryFromUrl(urlObject) {
 // Checks for existence of hashed query in IDB
 async function checkQueryExists(hashedQuery) {
   try {
-    const val = await get('queries', hashedQuery);
-    return val;
+    return await get('queries', hashedQuery);
   } catch (err) {
     sw_error_log('Error getting query from IDB', err.message);
   }
 }
 
+// Returns false if the cacheExpirationLimit has been set,
+// and the lastApiCall occured more than cacheExpirationLimit milliseconds ago
+function checkCachedQueryIsFresh({ lastApiCall }) {
+  const { cacheExpirationLimit } = settings;
+  if (!cacheExpirationLimit) return true;
+  return Date.now() - lastApiCall < cacheExpirationLimit;
+}
+
 // If the query doesn't exist in the cache, then execute
 // the query and return the result.
-async function executeQuery(url, method, headers, body) {
+async function executeQuery(urlObject, method, headers, body, metrics) {
   try {
     const options = { method, headers };
     if (method === 'POST') {
       options.body = body;
     }
-    const response = await fetch(url, options);
+    const response = await fetch(urlObject.href, options);
     const data = await response.json();
     return data;
   } catch (err) {
@@ -119,23 +124,24 @@ async function executeQuery(url, method, headers, body) {
 
 // Write the result into cache
 function writeToCache(hash, queryResult) {
-  set('queries', hash, queryResult)
+  if (!queryResult) return;
+  set('queries', hash, { data: queryResult, lastApiCall: Date.now() })
     .then(() => sw_log('Wrote response to cache.'))
     .catch((err) =>
       sw_error_log('Could not write response to cache', err.message)
     );
 }
 
-/*Cache-update functionality (part of config object)
+/*
+Cache-update functionality (part of config object)
 When a request comes in from the client, deliver the content from the cache (if possible) as usual.
 In addition to the normal logic, even if the response is already in the cache, follow through with 
 sending the request to the server, updating the cache upon receipt of response.
 */
-async function executeAndUpdate(queryParams, hashedQuery) {
-  //wait for execution of query and assign results to data
+
+async function executeAndUpdate(hashedQuery, queryParams) {
   const data = await executeQuery(...queryParams);
-  //update cache
-  //currently not doing any type of check to see if "new" result is actually different from old data
+  // currently not doing any type of check to see if "new" result is actually different from old data
   writeToCache(hashedQuery, data);
-  return console.log('The value of: ', hashedQuery, 'has been updated.' );
+  return data;
 }

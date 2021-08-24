@@ -21,7 +21,7 @@ export class Metrics {
             await set('metrics', hash, { ...metrics, cachedSpeeds: metrics.cachedSpeeds.concat(timeElapsed) })
               .catch(sw_error_log);
           } else {
-            await set('metrics', hash, { ...metrics, uncachedSpeeds: metrics.uncachedSpeeds.concat(timeElapsed)})
+            await set('metrics', hash, { ...metrics, uncachedSpeeds: metrics.uncachedSpeeds.concat(timeElapsed) })
               .catch(sw_error_log);
           }
       }
