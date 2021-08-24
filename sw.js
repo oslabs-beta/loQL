@@ -10,7 +10,7 @@ import { parse } from 'graphql/language/parser';
 let settings = {};
 self.addEventListener('activate', async () => {
   try {
-    await Promise.all(  
+    await Promise.all(
       validSettings.map(async (setting) => {
         const result = await get('settings', setting);
         settings[setting] = result;
@@ -32,7 +32,13 @@ self.addEventListener('fetch', async (fetchEvent) => {
   if (urlObject.pathname.endsWith('/graphql')) {
     async function fetchAndGetResponse() {
       try {
-        const { data, hashedQuery } = await runCachingLogic({ urlObject, method, headers, metrics, request: fetchEvent.request });
+        const { data, hashedQuery } = await runCachingLogic({
+          urlObject,
+          method,
+          headers,
+          metrics,
+          request: fetchEvent.request,
+        });
         metrics.save(hashedQuery);
         return new Response(JSON.stringify(data), { status: 200 });
       } catch (err) {
@@ -45,8 +51,17 @@ self.addEventListener('fetch', async (fetchEvent) => {
 });
 
 // The main wrapper function for our caching solution
-async function runCachingLogic({ urlObject, method, headers, metrics, request }) {
-  const { query, variables } = method === 'GET' ? getQueryFromUrl(urlObject) : await getQueryFromBody(request);
+async function runCachingLogic({
+  urlObject,
+  method,
+  headers,
+  metrics,
+  request,
+}) {
+  const { query, variables } =
+    method === 'GET'
+      ? getQueryFromUrl(urlObject)
+      : await getQueryFromBody(request);
   const AST = parse(query);
   // const queryMetadata = extractMetadataFromQuery(query);
   const hashedQuery = ourMD5(query.concat(variables)); // Variables could be null, that's okay!
@@ -56,23 +71,28 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
     metrics.isCached = true;
     sw_log('Fetched from cache');
     executeAndUpdate({ hashedQuery, urlObject, method, headers, body });
-    return { data: cachedData, hashedQuery }
+    return { data: cachedData, hashedQuery };
   } else {
-    const data = await executeAndUpdate({ hashedQuery, urlObject, method, headers, body });
-    return { data, hashedQuery }
+    const data = await executeAndUpdate({
+      hashedQuery,
+      urlObject,
+      method,
+      headers,
+      body,
+    });
+    return { data, hashedQuery };
   }
 }
 
 // Gets the query and variables from a GET request url and returns them
 // EG: 'http://localhost:4000/graphql?query=query\{human(input:\{id:"1"\})\{name\}\}'
 function getQueryFromUrl(urlObject) {
-  const query = urlObject.searchParams.get('query')
-  const variables = urlObject.searchParams.get('variables')
+  const query = urlObject.searchParams.get('query');
+  const variables = urlObject.searchParams.get('variables');
   if (!query)
     throw new Error(`This HTTP GET request is not a valid GQL request: ${url}`);
   return { query, variables };
 }
-
 
 // Gets the query and variables from a POST request returns them
 const getQueryFromBody = async (request) => {
@@ -130,7 +150,13 @@ In addition to the normal logic, even if the response is already in the cache, f
 sending the request to the server, updating the cache upon receipt of response.
 */
 
-async function executeAndUpdate({ hashedQuery, urlObject, method, headers, body }) {
+async function executeAndUpdate({
+  hashedQuery,
+  urlObject,
+  method,
+  headers,
+  body,
+}) {
   const data = await executeQuery({ urlObject, method, headers, body });
   // currently not doing any type of check to see if "new" result is actually different from old data
   writeToCache({ hashedQuery, data });
@@ -143,4 +169,3 @@ function metaParseAST(query) {
 }
 
 */
-
