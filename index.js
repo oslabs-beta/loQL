@@ -1,9 +1,6 @@
 import { setMany } from './db';
 import { sw_log, sw_error_log } from './loggers';
-import { avgDiff, cachedAvg, uncachedAvg, summary} from "./Metrics";
-
-// Register service worker pulled in during webpack build step.
-// And create settings in IDB for service worker passed during registration step. Only create settings that are valid.
+import { avgDiff, cachedAvg, uncachedAvg, summary } from './Metrics';
 
 export const validSettings = [
   'useMetrics',
@@ -11,15 +8,32 @@ export const validSettings = [
   'cacheExpirationLimit',
 ];
 
-export const register = async (settings) => {
+const defaultSettings = {
+  useMetrics: true,
+  cacheMethod: 'cache-first',
+  cacheExpirationLimit: null,
+};
+
+// Register service worker pulled in during webpack build step.
+// And create settings in IDB for service worker passed during registration step. Only create settings that are valid.
+export const register = async (userSettings) => {
+  let settings;
+  try {
+    settings = userSettings
+      ? { ...defaultSettings, ...userSettings }
+      : defaultSettings;
+  } catch (err) {
+    throw new Error('Please pass an object to configure the cache.');
+  }
+
+  Object.keys(settings).forEach((key) => {
+    if (!validSettings.includes(key)) {
+      throw new Error(`${key} is not a valid configuration setting`);
+    }
+  });
+
   if (navigator.serviceWorker) {
-    await setMany(
-      'gql-store',
-      'settings',
-      Object.entries(settings).filter(([key, val]) =>
-        validSettings.includes(key)
-      )
-    );
+    await setMany('gql-store', 'settings', Object.entries(settings));
     setupMetrics();
     navigator.serviceWorker
       .register('./sw.js')
