@@ -2,16 +2,22 @@ import { setMany } from './db';
 import { sw_log, sw_error_log } from './loggers';
 import { avgDiff, cachedAvg, uncachedAvg, summary } from './Metrics';
 
+// useMetrics: Enable or disable saving caching metrics to IndexDB
+// cacheMethod: Process for requesting and serving data to client
+// cacheExpirationLimit: Amount of time (in milliseconds) before data is refetched from API, not served from cache
+// doNotCache: Array of strings corresponding to from GraphQL object types to be excluded from caching
 export const validSettings = [
   'useMetrics',
   'cacheMethod',
   'cacheExpirationLimit',
+  'doNotCache',
 ];
 
-const defaultSettings = {
+export const defaultSettings = {
   useMetrics: true,
   cacheMethod: 'cache-first',
   cacheExpirationLimit: null,
+  doNotCache: [],
 };
 
 // Register service worker pulled in during webpack build step.
