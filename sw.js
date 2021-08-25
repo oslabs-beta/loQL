@@ -3,8 +3,7 @@ import { get, set } from './db';
 import { Metrics } from './Metrics';
 import { validSettings } from './index';
 import { ourMD5 } from './md5';
-import { parse } from 'graphql/language/parser';
-import { visit } from 'graphql/language/visitor';
+import { parse, visit } from 'graphql/language';
 
 // Grab settings from IDB set during activation.
 // Do this before registering our event listeners.
@@ -30,7 +29,11 @@ self.addEventListener('fetch', async (fetchEvent) => {
   const clone = fetchEvent.request.clone();
   const { url, method, headers } = clone;
   const urlObject = new URL(url);
-  if (urlObject.pathname.endsWith('/graphql')) {
+  if (
+    urlObject.pathname.endsWith('/graphql') ||
+    urlObject.pathname.endsWith('v1beta')
+  ) {
+    //second endpoint is poke
     async function fetchAndGetResponse() {
       try {
         const { data, hashedQuery } = await runCachingLogic({
@@ -64,14 +67,25 @@ async function runCachingLogic({
       ? getQueryFromUrl(urlObject)
       : await getQueryFromBody(request);
 
-  const metadata = metaParseAST(query);
+  const metadata = metaParseAST(query); //generate metadate and run doNotCache logic
+  if (settings.doNotCache && doNotCacheCheck(metadata) === true) {
+    const responseData = await executeQuery({
+      urlObject,
+      method,
+      headers,
+      body,
+    });
+    return responseData;
+  }
   const hashedQuery = ourMD5(query.concat(variables)); // Variables could be null, that's okay!
   const body = JSON.stringify({ query, variables });
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData && checkCachedQueryIsFresh(cachedData.lastApiCall)) {
     metrics.isCached = true;
     sw_log('Fetched from cache');
-    executeAndUpdate({ hashedQuery, urlObject, method, headers, body });
+    if (settings.cacheMethod === 'cache-network') {
+      executeAndUpdate({ hashedQuery, urlObject, method, headers, body });
+    }
     return { data: cachedData, hashedQuery };
   } else {
     const data = await executeAndUpdate({
@@ -166,27 +180,47 @@ async function executeAndUpdate({
 // Parse AST and extract metadata
 // We want the operation type (query/mutation/subscription/etc.)
 function metaParseAST(query) {
-  const queryCST = { operationType: '', fields: [],  };
+  const queryCST = { operationType: '', fields: [] };
   const queryAST = parse(query);
   visit(queryAST, {
     OperationDefinition: {
       enter(node) {
         queryCST.operationType = node.operation;
-      }
+      },
     },
     SelectionSet: {
-      enter(node, key, parent, path, ancestors) {
-        console.log("NODE ", node);
+      enter(node /*, key, parent, path, ancestors*/) {
+        /*console.log("NODE ", node);
         console.log("KEY ", key);
         console.log("PARENT ", parent);
         console.log("PATH ", path); // How to drill into the query to get the exact node
         console.log("ANCESTORS ", ancestors);
+        */
         const selections = node.selections;
-        selections.forEach(selection => queryCST.fields.push(selection.name.value))
-      }
-    }
+        selections.forEach((selection) =>
+          queryCST.fields.push(selection.name.value)
+        );
+      },
+    },
   });
-
-  console.log(queryCST)
   return queryCST;
 }
+
+//Check metadata object for inclusion of field names that are included in "doNotCache" Configuration Object
+//setting. If match is found, execute query and return response to client, bypassing the cache for the entire query
+function doNotCacheCheck(queryCST) {
+  console.log('donotcachelogicexecuting');
+  const { doNotCache } = settings;
+  const fieldsArray = queryCST.fields;
+  for (let i = 0; i < fieldsArray.length; i++) {
+    // doNotCache.includes(fieldsArray[i])
+    for (let k = 0; k < doNotCache.length; k++) {
+      if (fieldsArray[i] == doNotCache[k]) {
+        console.log('Match found in doNotCacheCheck');
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
