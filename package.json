@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/oslabs-beta/loQL#readme",
   "dependencies": {
-    "idb": "^6.1.2"
+    "idb": "^6.1.2",
+    "react-chartjs-2": "^3.0.4"
   }
 }
