@@ -3,7 +3,7 @@ import { get, set } from './db';
 import { Metrics } from './Metrics';
 import { validSettings } from './index';
 import { ourMD5 } from './md5';
-import { parse } from 'graphql/language/parser';
+import { parse, visit, Kind } from 'graphql/language';
 
 // Grab settings from IDB set during activation.
 // Do this before registering our event listeners.
@@ -62,8 +62,11 @@ async function runCachingLogic({
     method === 'GET'
       ? getQueryFromUrl(urlObject)
       : await getQueryFromBody(request);
-  const AST = parse(query);
-  // const queryMetadata = extractMetadataFromQuery(query);
+
+  const queryCST = metaParseAST(query);
+  if ( settings.doNotCache[0] !== 'undefined' && doNotCacheCheck(queryCST) ) {
+    return executeQuery({ urlObject, method, headers, body });
+  }
   const hashedQuery = ourMD5(query.concat(variables)); // Variables could be null, that's okay!
   const body = JSON.stringify({ query, variables });
   const cachedData = await checkQueryExists(hashedQuery);
@@ -149,7 +152,6 @@ When a request comes in from the client, deliver the content from the cache (if 
 In addition to the normal logic, even if the response is already in the cache, follow through with 
 sending the request to the server, updating the cache upon receipt of response.
 */
-
 async function executeAndUpdate({
   hashedQuery,
   urlObject,
@@ -163,9 +165,47 @@ async function executeAndUpdate({
   return data;
 }
 
-/*parse AST and extract metadata
+// Create AST and extract metadata
+// relevant info: operation type (query/mutation/subscription/etc.), fields
 function metaParseAST(query) {
-  const queryAST = parse(query)
+  const queryCST = { operationType: '', fields: [],  };
+  const queryAST = parse(query);
+  visit(queryAST, {
+    OperationDefinition: {
+      enter(node) {
+        queryCST.operationType = node.operation;
+      }
+    },
+    SelectionSet: {
+      enter(node/*, key, parent, path, ancestors*/) {
+        /*console.log("NODE ", node);
+        console.log("KEY ", key);
+        console.log("PARENT ", parent);
+        console.log("PATH ", path); // How to drill into the query to get the exact node
+        console.log("ANCESTORS ", ancestors);
+        */
+        const selections = node.selections;
+        selections.forEach(selection => queryCST.fields.push(selection.name.value))
+      }
+    }
+  });
+
+  console.log(queryCST)
+  return queryCST;
 }
 
-*/
+//Check metadata object for inclusion of field names that are included in "doNotCache" Configuration Object
+//setting. If match is found, execute query and return response to client, bypassing the cache for the entire
+//query
+function doNotCacheCheck(queryCST) {
+  console.log('donotcachelogicexecuting');
+  const { doNotCache } = settings;
+  const fieldsArray = queryCST.fields;
+  let hasDNCinfo = false;
+  for(let i = 0; i < fieldsArray.length; i++) {
+    for(let k = 0; k < doNotCache.length; i++) {
+      if(fieldsArray[i] === doNotCache[k]) return hasDNCinfo = true;
+    }
+  }
+  return hasDNCinfo;
+}
