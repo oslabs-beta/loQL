@@ -85,7 +85,7 @@ export async function summary () {
         queryUncachedTime += time; //total amount of time to return data to client, for the individual (uncached) query
       }
       for (const time of values[key]['cachedSpeeds']) {
-        individualCachedSpeeds.push(time);
+        individualCachedSpeeds.push(time); 
         cachedTotalQueries += 1; //increments by 1 to elements within cachedSpeeds
         cachedTotalTime += time;
         quertyCachedTime += time; //total amount of time to return data to client, for the individual (cached) query
