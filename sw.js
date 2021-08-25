@@ -232,7 +232,7 @@ function doNotCacheCheck(queryCST) {
   const { doNotCache } = settings;
   const fieldsArray = queryCST.fields;
   for (let i = 0; i < fieldsArray.length; i++) {
-    // NOTE: doNotCache.includes(fieldsArray[i])
+    // NOTE: (currently doesn't work) if ( doNotCache.includes(fieldsArray[i]) ) return true;
     for (let k = 0; k < doNotCache.length; k++) {
       if (fieldsArray[i] == doNotCache[k]) {
         return true;

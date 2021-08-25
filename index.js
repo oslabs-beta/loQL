@@ -11,13 +11,13 @@ import { avgDiff, cachedAvg, uncachedAvg, summary } from './Metrics';
 //    doNotCache.global is an array of strings (objects/scalars) and whose inclusion will exempt a query response
 //    from being cached regardless of the GraphQL request endpoint. An empty array for custom endpoint keys will
 //    exempt all reponses from the respective endpoint key
-Array of strings corresponding to from GraphQL object types to be excluded from caching
 export const validSettings = [
   'gqlEndpoints',
   'useMetrics',
   'cacheMethod',
   'cacheExpirationLimit',
   'doNotCache',
+  'doNotCachev2',
 ];
 
 export const defaultSettings = {
@@ -25,7 +25,8 @@ export const defaultSettings = {
   useMetrics: true,
   cacheMethod: 'cache-first',
   cacheExpirationLimit: null,
-  doNotCache: { 
+  doNotCache: [],
+  doNotCachev2: { 
     global: [null],
   },
 };
