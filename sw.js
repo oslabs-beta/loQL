@@ -3,7 +3,7 @@ import { get, set } from './db';
 import { Metrics } from './Metrics';
 import { validSettings } from './index';
 import { ourMD5 } from './md5';
-import { parse, visit, Kind } from 'graphql/language';
+import { parse, visit } from 'graphql/language';
 
 // Grab settings from IDB set during activation.
 // Do this before registering our event listeners.
@@ -29,7 +29,7 @@ self.addEventListener('fetch', async (fetchEvent) => {
   const clone = fetchEvent.request.clone();
   const { url, method, headers } = clone;
   const urlObject = new URL(url);
-  if (urlObject.pathname.endsWith('/graphql')) {
+  if ( urlObject.pathname.endsWith('/graphql') || urlObject.pathname.endsWith('v1beta') ) { //second endpoint is poke
     async function fetchAndGetResponse() {
       try {
         const { data, hashedQuery } = await runCachingLogic({
@@ -63,10 +63,13 @@ async function runCachingLogic({
       ? getQueryFromUrl(urlObject)
       : await getQueryFromBody(request);
 
-  const queryCST = metaParseAST(query);
-  if ( settings.doNotCache[0] !== 'undefined' && doNotCacheCheck(queryCST) ) {
-    return executeQuery({ urlObject, method, headers, body });
+  const metadata = metaParseAST(query); //generate metadate and run doNotCache logic
+  console.log(settings);
+  if ( settings.doNotCache && doNotCacheCheck(metadata) === true ) {
+    const responseData = await executeQuery({ urlObject, method, headers, body });
+    return responseData;
   }
+  console.log(metadata);
   const hashedQuery = ourMD5(query.concat(variables)); // Variables could be null, that's okay!
   const body = JSON.stringify({ query, variables });
   const cachedData = await checkQueryExists(hashedQuery);
@@ -201,11 +204,14 @@ function doNotCacheCheck(queryCST) {
   console.log('donotcachelogicexecuting');
   const { doNotCache } = settings;
   const fieldsArray = queryCST.fields;
-  let hasDNCinfo = false;
   for(let i = 0; i < fieldsArray.length; i++) {
-    for(let k = 0; k < doNotCache.length; i++) {
-      if(fieldsArray[i] === doNotCache[k]) return hasDNCinfo = true;
+    // doNotCache.includes(fieldsArray[i])
+    for(let k = 0; k < doNotCache.length; k++) {
+      if(fieldsArray[i] == doNotCache[k]) {
+        console.log('Match found in doNotCacheCheck');
+        return true;
+      }
     }
   }
-  return hasDNCinfo;
+  return false;
 }
