@@ -2,10 +2,12 @@ import { setMany } from './db';
 import { sw_log, sw_error_log } from './loggers';
 import { avgDiff, cachedAvg, uncachedAvg, summary } from './Metrics';
 
-// useMetrics: Enable or disable saving caching metrics to IndexDB
-// cacheMethod: Process for requesting and serving data to client
-// cacheExpirationLimit: Amount of time (in milliseconds) before data is refetched from API, not served from cache
-// doNotCache: Array of strings corresponding to from GraphQL object types to be excluded from caching
+/* validSettings are the settings the user can specify. They are:
+ * useMetrics: Enable or disable saving caching metrics to IndexDB
+ * cacheMethod: Process for requesting and serving data to client
+ * cacheExpirationLimit: Amount of time (in milliseconds) before data is refetched from API, not served from cache
+ * doNotCache: Array of strings corresponding to from GraphQL object types to be excluded from caching
+ */
 export const validSettings = [
   'useMetrics',
   'cacheMethod',
@@ -20,8 +22,10 @@ export const defaultSettings = {
   doNotCache: [],
 };
 
-// Register service worker pulled in during webpack build step.
-// And create settings in IDB for service worker passed during registration step. Only create settings that are valid.
+/* Registers service worker pulled in during build steps of webpack/parcel/etc.
+ * Also creates settings in IDB for service worker passed during registration step.
+ * Only creates settings that are contained in the validSettings array.
+ */
 export const register = async (userSettings) => {
   let settings;
   try {
