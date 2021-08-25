@@ -76,8 +76,7 @@ export async function summary() {
   let totalUncachedTimeSquared = 0;
 
   for (const [key] of Object.entries(metricValues)) {
-    values[key] = metricValues[key]; //
-    // console.log('this is the value', metricValues[key], `\n this is the key`, key)
+    values[key] = metricValues[key];
   }
 
   for (const [key, val] of Object.entries(values)) {
@@ -121,4 +120,3 @@ export async function summary() {
   // set('Summary', 'totals', total).catch(sw_error_log);
   return total;
 }
-
