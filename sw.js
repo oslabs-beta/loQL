@@ -33,12 +33,10 @@ self.addEventListener('fetch', async (fetchEvent) => {
   const clone = fetchEvent.request.clone();
   const { url, method, headers } = clone;
   const urlObject = new URL(url);
+  const { gqlEndpoints } = settings;
 
-  // TODO: Allow user to pass in endpoints in settings object.
-  if (
-    urlObject.pathname.endsWith('/graphql') ||
-    urlObject.pathname.endsWith('/v1beta')
-  ) {
+  //Check if the fetch request URL matches a graphQL endpoint as defined in settings
+  if ( gqlEndpoints.indexOf(urlObject.href) !== -1 ) {
     async function fetchAndGetResponse() {
       try {
         const { data, hashedQuery } = await runCachingLogic({
@@ -241,3 +239,4 @@ function doNotCacheCheck(queryCST) {
   }
   return false;
 }
+
