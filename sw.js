@@ -76,7 +76,9 @@ async function runCachingLogic({
   if (cachedData && checkCachedQueryIsFresh(cachedData.lastApiCall)) {
     metrics.isCached = true;
     sw_log('Fetched from cache');
-    executeAndUpdate({ hashedQuery, urlObject, method, headers, body });
+    if(settings.cacheMethod === 'cache-network') {
+      executeAndUpdate({ hashedQuery, urlObject, method, headers, body });
+    };
     return { data: cachedData, hashedQuery };
   } else {
     const data = await executeAndUpdate({
