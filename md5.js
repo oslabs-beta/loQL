@@ -1,3 +1,7 @@
+/* Rather than importing the entire MD5 package,
+ * we're simply importing this function directly.
+ * This makes our package significantly lighter.
+ */
 export var ourMD5 = function (string) {
   function RotateLeft(lValue, iShiftBits) {
     return (lValue << iShiftBits) | (lValue >>> (32 - iShiftBits));
@@ -227,4 +231,3 @@ export var ourMD5 = function (string) {
 
   return temp.toLowerCase();
 };
-

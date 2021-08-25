@@ -30,8 +30,10 @@ export const defaultSettings = {
   },
 };
 
-// Register service worker pulled in during webpack build step.
-// And create settings in IDB for service worker passed during registration step. Only create settings that are valid.
+/* Registers service worker pulled in during build steps of webpack/parcel/etc.
+ * Also creates settings in IDB for service worker passed during registration step.
+ * Only creates settings that are contained in the validSettings array.
+ */
 export const register = async (userSettings) => {
   let settings;
   try {
