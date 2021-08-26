@@ -97,8 +97,8 @@ export async function summary () {
     const totalCachedAvg = Number((cachedTotalTime / cachedTotalQueries).toFixed(2));
     const percentFaster = ((totalUncachedAvg - totalCachedAvg)/totalCachedAvg*100)
     const total = {
-      'Uncached Avgerage Time': (totalUncachedAvg + 'ms'),
-      'Cached Avgerage Time': (totalCachedAvg + 'ms'),
+      'Uncached Average Time': (totalUncachedAvg + 'ms'),
+      'Cached Average Time': (totalCachedAvg + 'ms'),
       'Percent Speed Increase From Caching': (percentFaster.toFixed(2) + '%'),
       'Total Time Saved': ((totalUncachedTimeSquared - cachedTotalTime) + 'ms'),
       //multiply total # of queries x avg uncached time
@@ -106,14 +106,14 @@ export async function summary () {
       'Created At': new Date()
     }
     const totalDetail = {
-      'Uncached Avgerage Time': (totalUncachedAvg + 'ms'),
-      'Cached Avgerage Time': (totalCachedAvg + 'ms'),
-      'Percent Speed Increase From Caching': (percentFaster.toFixed(2) + '%'),
-      'Total Time Saved': ((totalUncachedTimeSquared - cachedTotalTime) + 'ms'),
+      uncachedAverageTime: (totalUncachedAvg + 'ms'),
+      cachedAverageTime: (totalCachedAvg + 'ms'),
+      percent: (percentFaster.toFixed(2) + '%'),
+      totalTimeSaved: ((totalUncachedTimeSquared - cachedTotalTime) + 'ms'),
       //multiply total # of queries x avg uncached time
-      'Total Query Calls': uncachedTotalQueries + cachedTotalQueries,
-      'Individual Cached Speeds': individualCachedSpeeds,
-      'Individual Uncached Speeds': individualUncachedSpeeds,
+      TotalQueryCalls: uncachedTotalQueries + cachedTotalQueries,
+      individualCachedSpeeds: individualCachedSpeeds,
+      individualUncachedSpeeds: individualUncachedSpeeds,
     }
 
     console.table(total);
