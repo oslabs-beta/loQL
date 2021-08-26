@@ -1,46 +1,53 @@
 import { sw_log, sw_error_log } from './loggers';
-import { get, set, keys, getAll} from './db';
+import { get, set, keys, getAll } from './db';
 
 export class Metrics {
-    constructor() {
-        this.isCached = false;
-        this.start = Date.now();
-    };
+  constructor() {
+    this.isCached = false;
+    this.start = Date.now();
+  }
 
-    /* 
+  /* 
     Save to IDB, the last time the query was run to the API,
     and the speed of the query. Keep cached queries and uncached queries separate.
     */
-    async save(hash) {
-      const timeElapsed = (Date.now() - this.start);
-      const metrics = await get('metrics', hash).catch(sw_error_log);
-      if (metrics === undefined) {
-        await set('metrics', hash, { uncachedSpeeds: [timeElapsed], cachedSpeeds: [] }).catch(sw_error_log);
+  async save(hash) {
+    const timeElapsed = Date.now() - this.start;
+    const metrics = await get('metrics', hash).catch(sw_error_log);
+    if (metrics === undefined) {
+      await set('metrics', hash, {
+        uncachedSpeeds: [timeElapsed],
+        cachedSpeeds: [],
+      }).catch(sw_error_log);
+    } else {
+      if (this.isCached) {
+        await set('metrics', hash, {
+          ...metrics,
+          cachedSpeeds: metrics.cachedSpeeds.concat(timeElapsed),
+        }).catch(sw_error_log);
       } else {
-          if (this.isCached) {
-            await set('metrics', hash, { ...metrics, cachedSpeeds: metrics.cachedSpeeds.concat(timeElapsed) })
-              .catch(sw_error_log);
-          } else {
-            await set('metrics', hash, { ...metrics, uncachedSpeeds: metrics.uncachedSpeeds.concat(timeElapsed) })
-              .catch(sw_error_log);
-          }
+        await set('metrics', hash, {
+          ...metrics,
+          uncachedSpeeds: metrics.uncachedSpeeds.concat(timeElapsed),
+        }).catch(sw_error_log);
       }
     }
-};
+  }
+}
 
-export async function cachedAvg (hash) {
+export async function cachedAvg(hash) {
   const data = await get('metrics', hash).catch(sw_error_log);
-  console.log(data)
+  console.log(data);
   let totalMilliseconds = 0;
   for (const time of data.cachedSpeeds) {
     totalMilliseconds += time;
   }
-  return totalMilliseconds / data.cachedSpeeds.length; 
+  return totalMilliseconds / data.cachedSpeeds.length;
 }
 
-export async function uncachedAvg (hash) {
+export async function uncachedAvg(hash) {
   const data = await get('metrics', hash);
-  console.log(data)
+  console.log(data);
   let totalMilliseconds = 0;
   for (const time of data.uncachedSpeeds) {
     totalMilliseconds += time;
@@ -48,15 +55,15 @@ export async function uncachedAvg (hash) {
   return totalMilliseconds / data.uncachedSpeeds.length;
 }
 
-export async function avgDiff (hash) {
+export async function avgDiff(hash) {
   const cached = await cachedAvg(hash);
   const uncached = await uncachedAvg(hash);
   console.table({
     'Average Time Saved': Number((uncached - cached).toFixed(2)),
     'Average Cached Speed': Number(cached.toFixed(2)),
-    'Average Uncached Speed': Number(uncached.toFixed(2))
- });
-};
+    'Average Uncached Speed': Number(uncached.toFixed(2)),
+  });
+}
 
 export async function summary () {
     const store = 'metrics'
@@ -71,9 +78,10 @@ export async function summary () {
     let totalUncachedTimeSquared = 0;
 
     for (const [key] of Object.entries(metricValues)) {
-      values[key] = metricValues[key]; // 
+      values[key] = metricValues[key]; //
       // console.log('this is the value', metricValues[key], `\n this is the key`, key)
     }
+
     
     for (const [key, val] of Object.entries(values)) {
       let quertyCachedTime = 0;
@@ -92,6 +100,7 @@ export async function summary () {
       }
       totalUncachedTimeSquared += ((queryUncachedTime/values[key]['uncachedSpeeds'].length) * values[key]['cachedSpeeds'].length);
     }
+  
 
     const totalUncachedAvg = Number((uncachedTotalTime / uncachedTotalQueries).toFixed(2));
     const totalCachedAvg = Number((cachedTotalTime / cachedTotalQueries).toFixed(2));
