@@ -34,9 +34,11 @@ self.addEventListener('fetch', async (fetchEvent) => {
   const { url, method, headers } = clone;
   const urlObject = new URL(url);
   const { gqlEndpoints } = settings;
+  const endpoint = urlObject.origin + urlObject.pathname;
+  console.log(endpoint);
 
   //Check if the fetch request URL matches a graphQL endpoint as defined in settings
-  if ( gqlEndpoints.indexOf(urlObject.href) !== -1 ) {
+  if ( gqlEndpoints.indexOf(endpoint) !== -1 ) {
     async function fetchAndGetResponse() {
       try {
         const { data, hashedQuery } = await runCachingLogic({
@@ -75,7 +77,8 @@ async function runCachingLogic({
       : await getQueryFromBody(request);
 
   const metadata = metaParseAST(query);
-  if (settings.doNotCache && doNotCacheCheck(metadata) === true) {
+  console.log(settings.doNotCacheGlobal);
+  if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject) === true) {
     const responseData = await executeQuery({
       urlObject,
       method,
@@ -102,6 +105,7 @@ async function runCachingLogic({
       headers,
       body,
     });
+    console.log('line 108');
     return { data, hashedQuery };
   }
 }
@@ -153,7 +157,7 @@ async function executeQuery({ urlObject, method, headers, body }) {
     if (method === 'POST') {
       options.body = body;
     }
-    const response = await fetch(urlObject.href, options);
+    const response = await fetch(urlObject.origin + urlObject.pathname, options);
     const data = await response.json();
     return data;
   } catch (err) {
@@ -186,6 +190,7 @@ async function executeAndUpdate({
   headers,
   body,
 }) {
+  console.log('execute and update');
   const data = await executeQuery({ urlObject, method, headers, body });
   // NOTE: currently not doing any type of check to see if "new" result is actually different from old data
   writeToCache({ hashedQuery, data });
@@ -226,17 +231,25 @@ function metaParseAST(query) {
  * Check metadata object for inclusion of field names that are included in "doNotCache" Configuration Object
  * setting. If match is found, execute query and return response to client, bypassing the cache for the entire query
  */
-function doNotCacheCheck(queryCST) {
-  const { doNotCache } = settings;
+function doNotCacheCheck(queryCST, urlObject) {
+  const endpoint = urlObject.origin + urlObject.pathname;
+  let doNotCache = [];
   const fieldsArray = queryCST.fields;
+  console.log('donotcache logic is being executed');
+  if (endpoint in settings.doNotCacheCustom) {
+    doNotCache = [settings.doNotCacheCustom[endpoint].concat(...settings.doNotCacheGlobal)];
+  } else { 
+    doNotCache = [...settings.doNotCacheGlobal];
+  }
+
   for (let i = 0; i < fieldsArray.length; i++) {
-    // NOTE: (currently doesn't work) if ( doNotCache.includes(fieldsArray[i]) ) return true;
     for (let k = 0; k < doNotCache.length; k++) {
       if (fieldsArray[i] == doNotCache[k]) {
         return true;
       }
     }
   }
+  console.log(false);
   return false;
 }
 

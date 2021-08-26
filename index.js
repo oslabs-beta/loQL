@@ -16,8 +16,8 @@ export const validSettings = [
   'useMetrics',
   'cacheMethod',
   'cacheExpirationLimit',
-  'doNotCache',
-  'doNotCachev2',
+  'doNotCacheGlobal',
+  'doNotCacheCustom',
 ];
 
 export const defaultSettings = {
@@ -25,10 +25,8 @@ export const defaultSettings = {
   useMetrics: true,
   cacheMethod: 'cache-first',
   cacheExpirationLimit: null,
-  doNotCache: [],
-  doNotCachev2: { 
-    global: [null],
-  },
+  doNotCacheGlobal: [],
+  doNotCacheCustom: {},
 };
 
 /* Registers service worker pulled in during build steps of webpack/parcel/etc.
