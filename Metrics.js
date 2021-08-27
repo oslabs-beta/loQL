@@ -38,7 +38,6 @@ export class Metrics {
 
 export async function cachedAvg(hash) {
   const data = await get('metrics', hash).catch(sw_error_log);
-  console.log(data);
   let totalMilliseconds = 0;
   for (const time of data.cachedSpeeds) {
     totalMilliseconds += time;
@@ -48,7 +47,6 @@ export async function cachedAvg(hash) {
 
 export async function uncachedAvg(hash) {
   const data = await get('metrics', hash);
-  console.log(data);
   let totalMilliseconds = 0;
   for (const time of data.uncachedSpeeds) {
     totalMilliseconds += time;
@@ -83,7 +81,6 @@ export async function summary () {
     for(let metricObject of metricValues) {
       let queryUncachedTime = 0;
       let queryCachedTime = 0;
-      console.log(metricObject);
       for (const time of metricObject['uncachedSpeeds']) {
         lastUncachedQuery = time;
         individualUncachedSpeeds.push(time);
