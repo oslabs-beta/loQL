@@ -231,13 +231,11 @@ function doNotCacheCheck(queryCST, urlObject) {
   const endpoint = urlObject.origin + urlObject.pathname;
   let doNotCache = [];
   const fieldsArray = queryCST.fields;
-  
   if (endpoint in settings.doNotCacheCustom) {
-    doNotCache = [settings.doNotCacheCustom[endpoint].concat(...settings.doNotCacheGlobal)];
+    doNotCache = settings.doNotCacheCustom[endpoint].concat(...settings.doNotCacheGlobal)
   } else { 
     doNotCache = [...settings.doNotCacheGlobal];
   }
-
   for (let i = 0; i < fieldsArray.length; i++) {
     for (let k = 0; k < doNotCache.length; k++) {
       if (fieldsArray[i] == doNotCache[k]) {
