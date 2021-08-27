@@ -5,8 +5,10 @@ import { validSettings } from './index';
 import { ourMD5 } from './md5';
 import { parse, visit } from 'graphql/language';
 
-// Grab settings from IDB set during activation.
-// Do this before registering our event listeners.
+/*
+ * Grab settings from IDB set during activation.
+ * Do this before registering our event listeners.
+ */
 let settings = {};
 self.addEventListener('activate', async () => {
   try {
@@ -22,14 +24,21 @@ self.addEventListener('activate', async () => {
   }
 });
 
-// Listen for fetch events, and for those to the /graphql endpoint,
-// run our caching logic  , passing in information about the request.
+/*
+ Listen for fetch events, and for those to the /graphql endpoint,
+ run our caching logic  , passing in information about the request.
+*/
 self.addEventListener('fetch', async (fetchEvent) => {
   const metrics = new Metrics();
   const clone = fetchEvent.request.clone();
   const { url, method, headers } = clone;
   const urlObject = new URL(url);
-  if ( urlObject.pathname.endsWith('/graphql') || urlObject.pathname.endsWith('v1beta') ) { //second endpoint is poke
+
+  // TODO: Allow user to pass in endpoints in settings object.
+  if (
+    urlObject.pathname.endsWith('/graphql') ||
+    urlObject.pathname.endsWith('/v1beta')
+  ) {
     async function fetchAndGetResponse() {
       try {
         const { data, hashedQuery } = await runCachingLogic({
@@ -50,7 +59,11 @@ self.addEventListener('fetch', async (fetchEvent) => {
   }
 });
 
-// The main wrapper function for our caching solution
+/* 
+ The main wrapper function for our caching solution.
+ Generates response data, either through API call or from cache,
+ and sends it back. Updates the cache asynchronously after response.
+*/
 async function runCachingLogic({
   urlObject,
   method,
@@ -63,22 +76,25 @@ async function runCachingLogic({
       ? getQueryFromUrl(urlObject)
       : await getQueryFromBody(request);
 
-  const metadata = metaParseAST(query); //generate metadate and run doNotCache logic
-  console.log(settings);
-  if ( settings.doNotCache && doNotCacheCheck(metadata) === true ) {
-    const responseData = await executeQuery({ urlObject, method, headers, body });
+  const metadata = metaParseAST(query);
+  if (settings.doNotCache && doNotCacheCheck(metadata) === true) {
+    const responseData = await executeQuery({
+      urlObject,
+      method,
+      headers,
+      body,
+    });
     return responseData;
   }
-  console.log(metadata);
-  const hashedQuery = ourMD5(query.concat(variables)); // Variables could be null, that's okay!
+  const hashedQuery = ourMD5(query.concat(variables)); // NOTE: Variables could be null, that's okay!
   const body = JSON.stringify({ query, variables });
   const cachedData = await checkQueryExists(hashedQuery);
   if (cachedData && checkCachedQueryIsFresh(cachedData.lastApiCall)) {
     metrics.isCached = true;
     sw_log('Fetched from cache');
-    if(settings.cacheMethod === 'cache-network') {
+    if (settings.cacheMethod === 'cache-network') {
       executeAndUpdate({ hashedQuery, urlObject, method, headers, body });
-    };
+    }
     return { data: cachedData, hashedQuery };
   } else {
     const data = await executeAndUpdate({
@@ -92,8 +108,10 @@ async function runCachingLogic({
   }
 }
 
-// Gets the query and variables from a GET request url and returns them
-// EG: 'http://localhost:4000/graphql?query=query\{human(input:\{id:"1"\})\{name\}\}'
+/*
+ * Gets the query and variables from a GET request url and returns them
+ * EG: 'http://localhost:4000/graphql?query=query\{human(input:\{id:"1"\})\{name\}\}'
+ */
 function getQueryFromUrl(urlObject) {
   const query = urlObject.searchParams.get('query');
   const variables = urlObject.searchParams.get('variables');
@@ -102,7 +120,9 @@ function getQueryFromUrl(urlObject) {
   return { query, variables };
 }
 
-// Gets the query and variables from a POST request returns them
+/*
+ * Gets the query and variables from a POST request returns them
+ */
 const getQueryFromBody = async (request) => {
   const { query, variables } = await request.json();
   return { query, variables };
@@ -117,16 +137,18 @@ async function checkQueryExists(hashedQuery) {
   }
 }
 
-// Returns false if the cacheExpirationLimit has been set,
-// and the lastApiCall occured more than cacheExpirationLimit milliseconds ago
+/* Returns false if the cacheExpirationLimit has been set,
+ * and the lastApiCall occured more than cacheExpirationLimit milliseconds ago
+ */
 function checkCachedQueryIsFresh(lastApiCall) {
   const { cacheExpirationLimit } = settings;
   if (!cacheExpirationLimit) return true;
   return Date.now() - lastApiCall < cacheExpirationLimit;
 }
 
-// If the query doesn't exist in the cache, then execute
-// the query and return the result.
+/* If the query doesn't exist in the cache, then execute
+ * the query and return the result.
+ */
 async function executeQuery({ urlObject, method, headers, body }) {
   try {
     const options = { method, headers };
@@ -141,7 +163,9 @@ async function executeQuery({ urlObject, method, headers, body }) {
   }
 }
 
-// Write the result into cache
+/* Write the result of the query into cache.
+ * Add the time it was called to the API for expiration purposes.
+ */
 function writeToCache({ hashedQuery, data }) {
   if (!data) return;
   set('queries', hashedQuery, { data, lastApiCall: Date.now() })
@@ -152,11 +176,11 @@ function writeToCache({ hashedQuery, data }) {
 }
 
 /*
-Cache-update functionality (part of config object)
-When a request comes in from the client, deliver the content from the cache (if possible) as usual.
-In addition to the normal logic, even if the response is already in the cache, follow through with 
-sending the request to the server, updating the cache upon receipt of response.
-*/
+ * Cache-update functionality (part of config object)
+ * When a request comes in from the client, deliver the content from the cache (if possible) as usual.
+ * In addition to the normal logic, even if the response is already in the cache, follow through with
+ * sending the request to the server, updating the cache upon receipt of response.
+ */
 async function executeAndUpdate({
   hashedQuery,
   urlObject,
@@ -165,24 +189,25 @@ async function executeAndUpdate({
   body,
 }) {
   const data = await executeQuery({ urlObject, method, headers, body });
-  // currently not doing any type of check to see if "new" result is actually different from old data
+  // NOTE: currently not doing any type of check to see if "new" result is actually different from old data
   writeToCache({ hashedQuery, data });
   return data;
 }
 
-// Create AST and extract metadata
-// relevant info: operation type (query/mutation/subscription/etc.), fields
+/*
+ * Create AST and extract metadata relevant info: operation type (query/mutation/subscription/etc.), fields
+ */
 function metaParseAST(query) {
-  const queryCST = { operationType: '', fields: [],  };
+  const queryCST = { operationType: '', fields: [] };
   const queryAST = parse(query);
   visit(queryAST, {
     OperationDefinition: {
       enter(node) {
         queryCST.operationType = node.operation;
-      }
+      },
     },
     SelectionSet: {
-      enter(node/*, key, parent, path, ancestors*/) {
+      enter(node /*, key, parent, path, ancestors*/) {
         /*console.log("NODE ", node);
         console.log("KEY ", key);
         console.log("PARENT ", parent);
@@ -190,27 +215,26 @@ function metaParseAST(query) {
         console.log("ANCESTORS ", ancestors);
         */
         const selections = node.selections;
-        selections.forEach(selection => queryCST.fields.push(selection.name.value))
-      }
-    }
+        selections.forEach((selection) =>
+          queryCST.fields.push(selection.name.value)
+        );
+      },
+    },
   });
-
-  console.log(queryCST)
   return queryCST;
 }
 
-//Check metadata object for inclusion of field names that are included in "doNotCache" Configuration Object
-//setting. If match is found, execute query and return response to client, bypassing the cache for the entire
-//query
+/*
+ * Check metadata object for inclusion of field names that are included in "doNotCache" Configuration Object
+ * setting. If match is found, execute query and return response to client, bypassing the cache for the entire query
+ */
 function doNotCacheCheck(queryCST) {
-  console.log('donotcachelogicexecuting');
   const { doNotCache } = settings;
   const fieldsArray = queryCST.fields;
-  for(let i = 0; i < fieldsArray.length; i++) {
-    // doNotCache.includes(fieldsArray[i])
-    for(let k = 0; k < doNotCache.length; k++) {
-      if(fieldsArray[i] == doNotCache[k]) {
-        console.log('Match found in doNotCacheCheck');
+  for (let i = 0; i < fieldsArray.length; i++) {
+    // NOTE: doNotCache.includes(fieldsArray[i])
+    for (let k = 0; k < doNotCache.length; k++) {
+      if (fieldsArray[i] == doNotCache[k]) {
         return true;
       }
     }

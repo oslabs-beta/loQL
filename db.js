@@ -1,6 +1,10 @@
 import { openDB } from 'idb';
 
-// Creates two new IDB object stores, one for metrics and one for queries
+/* Creates three new IDB object stores:
+ * Queries (stores actual data)
+ * Metrics (stores metadata about queries)
+ * Settings (stores user settings for service worker)
+ */
 const dbPromise = openDB('gql-store', 1, {
   upgrade(db) {
     db.createObjectStore('metrics');
@@ -9,7 +13,9 @@ const dbPromise = openDB('gql-store', 1, {
   },
 });
 
-// Functions for interacting with metrics ObjectStore
+/* Functions for interacting with metrics ObjectStore.
+ * These functions allow the service worker to get and set data.
+ */
 export async function get(name, key) {
   return (await dbPromise).get(name, key);
 }
