@@ -4,6 +4,7 @@ import { Metrics } from './Metrics';
 import { validSettings } from './index';
 import { ourMD5 } from './md5';
 import { parse, visit } from 'graphql/language';
+import { normalizeResult } from './normalizeResult';
 
 /*
  * Grab settings from IDB set during activation.
@@ -84,7 +85,7 @@ async function runCachingLogic({
       body,
     });
     return responseData;
-  }
+  };
   const hashedQuery = ourMD5(query.concat(variables)); // NOTE: Variables could be null, that's okay!
   const body = JSON.stringify({ query, variables });
   const cachedData = await checkQueryExists(hashedQuery);
@@ -156,6 +157,11 @@ async function executeQuery({ urlObject, method, headers, body }) {
     }
     const response = await fetch(urlObject.href, options);
     const data = await response.json();
+
+    console.log('data from server =', data);
+    // testing normalizeResult function
+    const testResult = normalizeResult(data.data);
+    console.log('testResult =', testResult);
     return data;
   } catch (err) {
     sw_error_log('Error executing query', err.message);
