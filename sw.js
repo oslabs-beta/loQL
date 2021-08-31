@@ -4,6 +4,7 @@ import { Metrics } from './Metrics';
 import { validSettings } from './index';
 import { ourMD5 } from './md5';
 import { parse, visit } from 'graphql/language';
+import { getIntrospectionQuery, buildClientSchema, printSchema } from 'graphql/utilities';
 
 /*
  * Grab settings from IDB set during activation.
@@ -22,12 +23,30 @@ self.addEventListener('activate', async () => {
   } catch (err) {
     sw_error_log('Could not initialize service worker settings.');
   }
+  //fetch schema from backend
+  try {
+    fetch("http://localhost:8080/api/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: getIntrospectionQuery() })
+    })
+      .then(res => res.json())
+      .then(res => {
+        writeToCache({hashedQuery: 'introspectionResult', data: res.data.data});
+        //console.log(res);
+      })
+  } catch (err) {
+    console.log('Error performing schema introspection query');
+  }
+  const clientSchema = await generateClientSchema();
+  const result = await printSchema(clientSchema);
+  return console.log(result);
 });
 
 /*
  Listen for fetch events, and for those to the /graphql endpoint,
  run our caching logic  , passing in information about the request.
-*/
+
 self.addEventListener('fetch', async (fetchEvent) => {
   const metrics = new Metrics();
   const clone = fetchEvent.request.clone();
@@ -57,7 +76,7 @@ self.addEventListener('fetch', async (fetchEvent) => {
     fetchEvent.respondWith(fetchAndGetResponse());
   }
 });
-
+*/
 /* 
  The main wrapper function for our caching solution.
  Generates response data, either through API call or from cache,
@@ -246,3 +265,9 @@ function doNotCacheCheck(queryCST, urlObject) {
   return false;
 }
 
+async function generateClientSchema(){
+  const presult = await get('queries', 'introspectionResult');
+  console.log(presult);
+  const result = await buildClientSchema(presult.data.data);
+  return result;
+}

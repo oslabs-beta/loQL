@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/oslabs-beta/loQL#readme",
   "dependencies": {
-    "graphql": "^15.5.1",
+    "graphql": "^15.5.2",
     "idb": "^6.1.2"
   }
 }
