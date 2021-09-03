@@ -24,20 +24,20 @@ self.addEventListener('activate', async () => {
     sw_error_log('Could not initialize service worker settings.');
   }
   //fetch schema from backend
-  try {
-    fetch("http://localhost:8080/api/graphql", {
+  /*try {
+    fetch("https://rickandmortyapi.com/graphql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query: getIntrospectionQuery() })
     })
       .then(res => res.json())
       .then(res => {
-        writeToCache({hashedQuery: 'introspectionResult', data: res.data.data});
+        writeToCache({hashedQuery: 'rickMortyIntrospectionResult', data: res.data});
         //console.log(res);
       })
   } catch (err) {
     console.log('Error performing schema introspection query');
-  }
+  }*/
   const clientSchema = await generateClientSchema();
   const result = await printSchema(clientSchema);
   return console.log(result);
@@ -266,8 +266,8 @@ function doNotCacheCheck(queryCST, urlObject) {
 }
 
 async function generateClientSchema(){
-  const presult = await get('queries', 'introspectionResult');
+  const presult = await get('queries', 'rockMortyIntrospectionResult');
   console.log(presult);
-  const result = await buildClientSchema(presult.data.data);
+  const result = await buildClientSchema(presult.data);
   return result;
 }
