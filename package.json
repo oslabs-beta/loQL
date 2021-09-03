@@ -20,5 +20,8 @@
   "dependencies": {
     "graphql": "^15.5.1",
     "idb": "^6.1.2"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0"
   }
 }
