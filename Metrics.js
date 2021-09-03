@@ -95,7 +95,9 @@ export async function summary() {
       queryCachedTime += time; //total amount of time to return data to client, for the individual (cached) query
     }
 
-    totalUncachedTimeSquared += (queryUncachedTime / metricObject['uncachedSpeeds'].length) * metricObject['cachedSpeeds'].length;
+    totalUncachedTimeSquared +=
+      (queryUncachedTime / metricObject['uncachedSpeeds'].length) *
+      metricObject['cachedSpeeds'].length;
   }
 
   const totalUncachedAvg = Number((uncachedTotalTime / uncachedTotalQueries).toFixed(2));
@@ -123,7 +125,5 @@ export async function summary() {
   };
 
   console.table(total);
-  //write total to metric object store
-  // set('Summary', 'totals', total).catch(sw_error_log);
   return totalDetail;
 }
