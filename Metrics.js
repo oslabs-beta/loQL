@@ -77,7 +77,7 @@ export async function summary() {
   let lastCachedQuery;
   let lastUncachedQuery;
 
-  for (let metricObject of metricValues) {
+  for (const metricObject of metricValues) {
     let queryUncachedTime = 0;
     let queryCachedTime = 0;
     for (const time of metricObject['uncachedSpeeds']) {
