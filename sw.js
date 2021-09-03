@@ -1,5 +1,5 @@
 import { sw_log, sw_error_log } from './loggers';
-import { get, set } from './db';
+import { get, set, setMany } from './db';
 import { Metrics } from './Metrics';
 import { validSettings } from './index';
 import { ourMD5 } from './md5';
@@ -38,7 +38,7 @@ self.addEventListener('fetch', async (fetchEvent) => {
   const endpoint = urlObject.origin + urlObject.pathname;
 
   //Check if the fetch request URL matches a graphQL endpoint as defined in settings
-  if ( gqlEndpoints.indexOf(endpoint) !== -1 ) {
+  if (gqlEndpoints.indexOf(endpoint) !== -1) {
     async function fetchAndGetResponse() {
       try {
         const { data, hashedQuery } = await runCachingLogic({
@@ -157,11 +157,6 @@ async function executeQuery({ urlObject, method, headers, body }) {
     }
     const response = await fetch(urlObject.href, options);
     const data = await response.json();
-
-    console.log('data from server =', data);
-    // testing normalizeResult function
-    const testResult = normalizeResult(data.data);
-    console.log('testResult =', testResult);
     return data;
   } catch (err) {
     sw_error_log('Error executing query', err.message);
@@ -180,6 +175,22 @@ function writeToCache({ hashedQuery, data }) {
     );
 }
 
+// Logic to write normalized cache data to indexedDB
+async function writeToNormalizedCache({ normalizedData }) {
+  const arrayKeyVals = normalizedData.denestedObjects.map(e => Object.entries(e)[0]);
+  const saveData = await setMany('queries', arrayKeyVals);
+  const rootQuery = await get('queries', 'ROOT_QUERY');
+  if (!rootQuery) {
+    await set('queries', 'ROOT_QUERY', normalizedData.rootQueryObject)
+  } else {
+    const expandedRoot = {
+      ...rootQuery,
+      ...normalizedData.rootQueryObject
+    };
+    await set('queries', 'ROOT_QUERY', expandedRoot);
+  }
+}
+
 /*
  * Cache-update functionality (part of config object)
  * When a request comes in from the client, deliver the content from the cache (if possible) as usual.
@@ -196,6 +207,9 @@ async function executeAndUpdate({
   const data = await executeQuery({ urlObject, method, headers, body });
   // NOTE: currently not doing any type of check to see if "new" result is actually different from old data
   writeToCache({ hashedQuery, data });
+  console.log('data before normalize =', data);
+  const normalizedData = normalizeResult(data.data);
+  writeToNormalizedCache({ normalizedData });
   return data;
 }
 
@@ -239,7 +253,7 @@ function doNotCacheCheck(queryCST, urlObject) {
   const fieldsArray = queryCST.fields;
   if (endpoint in settings.doNotCacheCustom) {
     doNotCache = settings.doNotCacheCustom[endpoint].concat(...settings.doNotCacheGlobal)
-  } else { 
+  } else {
     doNotCache = [...settings.doNotCacheGlobal];
   }
   for (let i = 0; i < fieldsArray.length; i++) {

@@ -32,8 +32,8 @@ export async function clear(name) {
   return (await dbPromise).clear(name);
 }
 
-export async function setMany(name, objectStore, keyValuePairs) {
-  const db = await openDB(name);
+export async function setMany(objectStore, keyValuePairs) {
+  const db = await openDB('gql-store');
   const transaction = db.transaction([objectStore], 'readwrite');
   await Promise.all(
     keyValuePairs.map(([val, key]) => transaction.store.put(key, val)),
