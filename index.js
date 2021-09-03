@@ -1,6 +1,7 @@
-import { setMany } from './db';
+import { setMany, set } from './db';
 import { sw_log, sw_error_log } from './loggers';
 import { avgDiff, cachedAvg, uncachedAvg, summary } from './Metrics';
+import { getIntrospectionQuery, buildClientSchema, printSchema } from 'graphql/utilities';
 
 // gqlEndpoints: an array of urls, as strings, listing every graphql endpoint which may be queried from the client api 
 // useMetrics: Enable or disable saving caching metrics to IndexDB
@@ -29,12 +30,21 @@ export const defaultSettings = {
   doNotCacheCustom: {},
 };
 
+// Upon SW activation, sw.js will invoke an introspection query to the endpoints specified in settings.
+// Successful query response will generate a clientSchema, from which the data will be parsed and
+// used to populate this global object
+/* export const clientSchemaInfo = {
+
+}; */
+
 /* Registers service worker pulled in during build steps of webpack/parcel/etc.
  * Also creates settings in IDB for service worker passed during registration step.
  * Only creates settings that are contained in the validSettings array.
  */
 export const register = async (userSettings) => {
   let settings;
+  const clientSchemaInfo = {};
+
   try {
     settings = userSettings
       ? { ...defaultSettings, ...userSettings }
@@ -50,7 +60,7 @@ export const register = async (userSettings) => {
   });
 
   if (navigator.serviceWorker) {
-    await setMany('gql-store', 'settings', Object.entries(settings));
+    await setMany('settings', Object.entries(settings));
     setupMetrics();
     navigator.serviceWorker
       .register('./sw.js')
@@ -68,6 +78,25 @@ export const register = async (userSettings) => {
   } else {
     sw_log('Service workers are not possible on this browser.');
   }
+  
+  //generate client schema from introspection query and save to DB
+  try {
+    fetch("https://rickandmortyapi.com/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: getIntrospectionQuery() })
+    })
+      .then(res => res.json())
+      .then(res => {
+        if(data){
+          set('schema', buildClientSchema(data.data));
+          sw_log('Client schema succesfully added to IndexedDB');
+        } else { sw_log('Error adding client schema to IndexedDB') }
+      })
+  } catch (err) {
+    sw_log('Error executing schema introspection query');
+  }
+
 };
 
 export function setupMetrics() {
