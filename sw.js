@@ -9,7 +9,7 @@ import { parse, visit } from 'graphql/language';
  * Grab settings from IDB set during activation.
  * Do this before registering our event listeners.
  */
-let settings = {};
+const settings = {};
 self.addEventListener('activate', async () => {
   try {
     await Promise.all(
@@ -149,7 +149,7 @@ const getQueryFromBody = async (request) => {
   try {
     ({ query, variables } = await request.json());
   } catch (err) {
-    sw_error_log("We couldn't get the query from the request body!");
+    sw_error_log('We couldn\'t get the query from the request body!');
     throw err;
   }
   return { query, variables };
