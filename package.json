@@ -13,7 +13,7 @@
   "keywords": [],
   "author": "Harrison Cramer <kingofcramers.dev@gmail.com> (https://github.com/harrisoncramer), Andrew Lee <lolfill0104@gmail.com> (https://github.com/lolfill), Konstantin Hamilton <konst@ntinh.am> (https://github.com/uitie)",
   "license": "MIT",
-  "bugs": {
+  "bugs": { 
     "url": "https://github.com/oslabs-beta/loQL/issues"
   },
   "homepage": "https://github.com/oslabs-beta/loQL#readme",
