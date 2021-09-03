@@ -66,65 +66,65 @@ export async function avgDiff(hash) {
 
 export async function summary () {
 
-    const store = 'metrics'
-    const metricValues = await getAll(store); // An array of objects from the Metrics store
-    const individualCachedSpeeds = [];
-    const individualUncachedSpeeds = [];
-    let uncachedTotalTime = 0; // Total time of all uncached queries
-    let cachedTotalTime = 0; // Total time of all cached queries
-    let uncachedTotalQueries = 0;
-    let cachedTotalQueries = 0;
-    let totalUncachedTimeSquared = 0;
-    let lastCachedQuery;
-    let lastUncachedQuery;
+  const store = 'metrics';
+  const metricValues = await getAll(store); // An array of objects from the Metrics store
+  const individualCachedSpeeds = [];
+  const individualUncachedSpeeds = [];
+  let uncachedTotalTime = 0; // Total time of all uncached queries
+  let cachedTotalTime = 0; // Total time of all cached queries
+  let uncachedTotalQueries = 0;
+  let cachedTotalQueries = 0;
+  let totalUncachedTimeSquared = 0;
+  let lastCachedQuery;
+  let lastUncachedQuery;
 
-    for(let metricObject of metricValues) {
-      let queryUncachedTime = 0;
-      let queryCachedTime = 0;
-      for (const time of metricObject['uncachedSpeeds']) {
-        lastUncachedQuery = time;
-        individualUncachedSpeeds.push(time);
-        uncachedTotalQueries += 1; // Increments by 1 to elements within uncachedSpeeds
-        uncachedTotalTime += time;
-        queryUncachedTime += time; // Total amount of time to return data to client, for the individual (uncached) query
-      }
-
-      for (const time of metricObject['cachedSpeeds']) {
-        individualCachedSpeeds.push(time);
-        cachedTotalQueries += 1; //increments by 1 to elements within cachedSpeeds
-        cachedTotalTime += time;
-        queryCachedTime += time; //total amount of time to return data to client, for the individual (cached) query
-      }
-
-      totalUncachedTimeSquared += ((queryUncachedTime/ metricObject['uncachedSpeeds'].length) * metricObject['cachedSpeeds'].length);
+  for(const metricObject of metricValues) {
+    let queryUncachedTime = 0;
+    let queryCachedTime = 0;
+    for (const time of metricObject['uncachedSpeeds']) {
+      lastUncachedQuery = time;
+      individualUncachedSpeeds.push(time);
+      uncachedTotalQueries += 1; // Increments by 1 to elements within uncachedSpeeds
+      uncachedTotalTime += time;
+      queryUncachedTime += time; // Total amount of time to return data to client, for the individual (uncached) query
     }
 
-    const totalUncachedAvg = Number((uncachedTotalTime / uncachedTotalQueries).toFixed(2));
-    const totalCachedAvg = Number((cachedTotalTime / cachedTotalQueries).toFixed(2));
-    const percentFaster = ((totalUncachedAvg - totalCachedAvg)/totalCachedAvg*100)
-
-    const total = {
-      'Uncached Average Time': (totalUncachedAvg + 'ms'),
-      'Cached Average Time': (totalCachedAvg + 'ms'),
-      'Percent Speed Increase From Caching': (percentFaster.toFixed(2) + '%'),
-      'Total Time Saved': ((totalUncachedTimeSquared - cachedTotalTime) + 'ms'),
-      'Total Query Calls': uncachedTotalQueries + cachedTotalQueries,
-      'Created At': new Date()
+    for (const time of metricObject['cachedSpeeds']) {
+      individualCachedSpeeds.push(time);
+      cachedTotalQueries += 1; //increments by 1 to elements within cachedSpeeds
+      cachedTotalTime += time;
+      queryCachedTime += time; //total amount of time to return data to client, for the individual (cached) query
     }
 
-    const totalDetail = {
-      uncachedAverageTime: (totalUncachedAvg),
-      cachedAverageTime: (totalCachedAvg),
-      percent: Number(percentFaster.toFixed(2)),
-      totalTimeSaved: ((totalUncachedTimeSquared - cachedTotalTime)),
-      totalQueryCalls: uncachedTotalQueries + cachedTotalQueries,
-      individualCachedSpeeds,
-      individualUncachedSpeeds,
-      recentQuery: { averageCachedTime: 1,  }
-    };
+    totalUncachedTimeSquared += ((queryUncachedTime / metricObject['uncachedSpeeds'].length) * metricObject['cachedSpeeds'].length);
+  }
 
-    console.table(total);
-    //write total to metric object store
-    // set('Summary', 'totals', total).catch(sw_error_log);
-    return totalDetail;
+  const totalUncachedAvg = Number((uncachedTotalTime / uncachedTotalQueries).toFixed(2));
+  const totalCachedAvg = Number((cachedTotalTime / cachedTotalQueries).toFixed(2));
+  const percentFaster = ((totalUncachedAvg - totalCachedAvg) / totalCachedAvg * 100);
+
+  const total = {
+    'Uncached Average Time': (totalUncachedAvg + 'ms'),
+    'Cached Average Time': (totalCachedAvg + 'ms'),
+    'Percent Speed Increase From Caching': (percentFaster.toFixed(2) + '%'),
+    'Total Time Saved': ((totalUncachedTimeSquared - cachedTotalTime) + 'ms'),
+    'Total Query Calls': uncachedTotalQueries + cachedTotalQueries,
+    'Created At': new Date()
   };
+
+  const totalDetail = {
+    uncachedAverageTime: (totalUncachedAvg),
+    cachedAverageTime: (totalCachedAvg),
+    percent: Number(percentFaster.toFixed(2)),
+    totalTimeSaved: ((totalUncachedTimeSquared - cachedTotalTime)),
+    totalQueryCalls: uncachedTotalQueries + cachedTotalQueries,
+    individualCachedSpeeds,
+    individualUncachedSpeeds,
+    recentQuery: { averageCachedTime: 1,  }
+  };
+
+  console.table(total);
+  //write total to metric object store
+  // set('Summary', 'totals', total).catch(sw_error_log);
+  return totalDetail;
+}
