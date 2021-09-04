@@ -38,15 +38,15 @@ self.addEventListener('activate', async () => {
       })
   } catch (err) {
     console.log('Error performing schema introspection query');
-  }*/
+  }
   const clientSchema = await generateClientSchema();
   const result = await printSchema(clientSchema);
-  return console.log(result);
+  return console.log(result);*/
 });
 
 
- Listen for fetch events, and for those to the /graphql endpoint,
- run our caching logic  , passing in information about the request.
+/*  Listen for fetch events, and for those to the /graphql endpoint,
+ run our caching logic  , passing in information about the request. */
 
 self.addEventListener('fetch', async (fetchEvent) => {
   const metrics = new Metrics();
