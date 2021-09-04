@@ -4,6 +4,7 @@ import { Metrics } from './Metrics';
 import { validSettings } from './index';
 import { ourMD5 } from './md5';
 import { parse, visit } from 'graphql/language';
+import { getIntrospectionQuery, buildClientSchema, printSchema } from 'graphql/utilities';
 import { normalizeResult } from './normalizeResult';
 
 /*
@@ -11,6 +12,7 @@ import { normalizeResult } from './normalizeResult';
  * Do this before registering our event listeners.
  */
 const settings = {};
+const schemaObject = {};
 self.addEventListener('activate', async () => {
   try {
     await Promise.all(
@@ -23,16 +25,51 @@ self.addEventListener('activate', async () => {
   } catch (err) {
     sw_error_log('Could not initialize service worker settings.');
   }
+
+  try {
+    await fetch("https://rickandmortyapi.com/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "schema-generation": true },
+   //   body: JSON.stringify({ query: getIntrospectionQuery() })
+      body: JSON.stringify({ query: `
+      query {
+        __schema {
+          types {
+            name
+            description
+          }
+          queryType {
+            name
+            description
+          }
+        }
+      }` })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        console.log(res)
+        if(res.data){
+          schemaObject.schema = buildClientSchema(res.data);
+          sw_log('Schema set!')
+        }
+      });
+  } catch (err) {
+    sw_error_log('Error executing schema introspection query');
+    console.log(err);
+  }  
 });
 
-/*
- Listen for fetch events, and for those to the /graphql endpoint,
- run our caching logic  , passing in information about the request.
-*/
+
+/*  Listen for fetch events, and for those to the /graphql endpoint,
+ run our caching logic  , passing in information about the request. */
+
 self.addEventListener('fetch', async (fetchEvent) => {
   const metrics = new Metrics();
   const clone = fetchEvent.request.clone();
   const { url, method, headers } = clone;
+
+  console.log(schemaObject.schema)
+
   const urlObject = new URL(url);
   const { gqlEndpoints } = settings;
   const endpoint = urlObject.origin + urlObject.pathname;
@@ -326,4 +363,11 @@ function doNotCacheCheck(queryCST, urlObject) {
     }
   }
   return false;
+}
+
+async function generateClientSchema(){
+  const presult = await get('queries', 'rockMortyIntrospectionResult');
+  console.log(presult);
+  const result = await buildClientSchema(presult.data);
+  return result;
 }

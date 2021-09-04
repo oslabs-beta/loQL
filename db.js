@@ -10,6 +10,7 @@ const dbPromise = openDB('gql-store', 1, {
     db.createObjectStore('metrics');
     db.createObjectStore('queries');
     db.createObjectStore('settings');
+    db.createObjectStore('schema');
   },
 });
 

@@ -1,6 +1,9 @@
-import { setMany } from './db';
+import { setMany, set } from './db';
 import { sw_log, sw_error_log } from './loggers';
 import { avgDiff, cachedAvg, uncachedAvg, summary } from './Metrics';
+import { GraphQLObjectType } from "graphql"
+import { getIntrospectionQuery, buildClientSchema, printSchema } from 'graphql/utilities';
+import { parse, visit } from 'graphql/language';
 
 // gqlEndpoints: an array of urls, as strings, listing every graphql endpoint which may be queried from the client api 
 // useMetrics: Enable or disable saving caching metrics to IndexDB
@@ -35,6 +38,8 @@ export const defaultSettings = {
  */
 export const register = async (userSettings) => {
   let settings;
+  const clientSchemaInfo = {};
+
   try {
     settings = userSettings
       ? { ...defaultSettings, ...userSettings }
@@ -68,7 +73,7 @@ export const register = async (userSettings) => {
   } else {
     sw_log('Service workers are not possible on this browser.');
   }
-};
+}
 
 export function setupMetrics() {
   window.avgDiff = avgDiff; // The total time saved for a particular query
