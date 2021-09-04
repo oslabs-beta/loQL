@@ -80,7 +80,7 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
    * our normalized cache. First, we're going to see if
    */
   const metadata = metaParseAST(query);
-  if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject) === true) {
+  if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject, settings) === true) {
     let responseData;
     try {
       responseData = await executeQuery({
@@ -269,7 +269,7 @@ export function metaParseAST(query) {
  * Check metadata object for inclusion of field names that are included in "doNotCache" Configuration Object
  * setting. If match is found, execute query and return response to client, bypassing the cache for the entire query
  */
-export function doNotCacheCheck(queryCST, urlObject) {
+export function doNotCacheCheck(queryCST, urlObject, settings) {
   const endpoint = urlObject.origin + urlObject.pathname;
   let doNotCache = [];
   const fieldsArray = queryCST.fields;
@@ -279,7 +279,7 @@ export function doNotCacheCheck(queryCST, urlObject) {
     doNotCache = settings.doNotCacheGlobal;
   }
 
-  for (field of fieldsArray) {
+  for (const field of fieldsArray) {
     if (doNotCache.includes(field)) return true;
   }
 
