@@ -80,7 +80,6 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
    * our normalized cache. First, we're going to see if
    */
   const metadata = metaParseAST(query);
-  console.log('metadata of query =', metadata);
   if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject) === true) {
     let responseData;
     try {
@@ -250,7 +249,6 @@ async function executeAndUpdate({ hashedQuery, urlObject, method, headers, body 
 function metaParseAST(query) {
   const queryCST = { operationType: '', fields: [] };
   const queryAST = parse(query);
-  console.log('queryAST in metaParseAST =', queryAST);
   visit(queryAST, {
     OperationDefinition: {
       enter(node) {
