@@ -77,6 +77,7 @@ async function runCachingLogic({
       : await getQueryFromBody(request);
 
   const metadata = metaParseAST(query);
+  console.log('metadata of query =', metadata);
   if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject) === true) {
     const responseData = await executeQuery({
       urlObject,
@@ -219,6 +220,7 @@ async function executeAndUpdate({
 function metaParseAST(query) {
   const queryCST = { operationType: '', fields: [] };
   const queryAST = parse(query);
+  console.log('queryAST in metaParseAST =', queryAST);
   visit(queryAST, {
     OperationDefinition: {
       enter(node) {
