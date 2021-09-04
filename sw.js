@@ -27,11 +27,12 @@ self.addEventListener('activate', async () => {
   }
 
   try {
-    await fetch("https://rickandmortyapi.com/graphql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "schema-generation": true },
-   //   body: JSON.stringify({ query: getIntrospectionQuery() })
-      body: JSON.stringify({ query: `
+    await fetch('https://rickandmortyapi.com/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'schema-generation': true },
+      //   body: JSON.stringify({ query: getIntrospectionQuery() })
+      body: JSON.stringify({
+        query: `
       query {
         __schema {
           types {
@@ -43,22 +44,22 @@ self.addEventListener('activate', async () => {
             description
           }
         }
-      }` })
+      }`,
+      }),
     })
-      .then(res => res.json())
-      .then(async res => {
-        console.log(res)
-        if(res.data){
+      .then((res) => res.json())
+      .then(async (res) => {
+        console.log(res);
+        if (res.data) {
           schemaObject.schema = buildClientSchema(res.data);
-          sw_log('Schema set!')
+          sw_log('Schema set!');
         }
       });
   } catch (err) {
     sw_error_log('Error executing schema introspection query');
     console.log(err);
-  }  
+  }
 });
-
 
 /*  Listen for fetch events, and for those to the /graphql endpoint,
  run our caching logic  , passing in information about the request. */
@@ -68,7 +69,7 @@ self.addEventListener('fetch', async (fetchEvent) => {
   const clone = fetchEvent.request.clone();
   const { url, method, headers } = clone;
 
-  console.log(schemaObject.schema)
+  console.log(schemaObject.schema);
 
   const urlObject = new URL(url);
   const { gqlEndpoints } = settings;
@@ -251,15 +252,15 @@ async function writeToCache({ hashedQuery, data }) {
 
 // Logic to write normalized cache data to indexedDB
 async function writeToNormalizedCache({ normalizedData }) {
-  const arrayKeyVals = normalizedData.denestedObjects.map(e => Object.entries(e)[0]);
+  const arrayKeyVals = normalizedData.denestedObjects.map((e) => Object.entries(e)[0]);
   const saveData = await setMany('queries', arrayKeyVals);
   const rootQuery = await get('queries', 'ROOT_QUERY');
   if (!rootQuery) {
-    await set('queries', 'ROOT_QUERY', normalizedData.rootQueryObject)
+    await set('queries', 'ROOT_QUERY', normalizedData.rootQueryObject);
   } else {
     const expandedRoot = {
       ...rootQuery,
-      ...normalizedData.rootQueryObject
+      ...normalizedData.rootQueryObject,
     };
     await set('queries', 'ROOT_QUERY', expandedRoot);
   }
@@ -285,24 +286,22 @@ async function executeAndUpdate({ hashedQuery, urlObject, method, headers, body 
  * Create AST and extract metadata relevant info: operation type (query/mutation/subscription/etc.), fields
  */
 
-function recurseWithArray (resultFromDb) {
-  Promise.all(resultFromDb.map(ref => get('queries', ref.substr(6))))
-  .then(arrayOfResults => {
-    console.log(arrayOfResults)
+function recurseWithArray(resultFromDb) {
+  Promise.all(resultFromDb.map((ref) => get('queries', ref.substr(6)))).then((arrayOfResults) => {
+    console.log(arrayOfResults);
     result.data[field] = arrayOfResults;
     console.log('final result =', result);
   });
-};
-
-function recurseWithObject () {
-  // If we encounter an array in this function
-  recurseWithArray(array)
 }
 
+function recurseWithObject() {
+  // If we encounter an array in this function
+  recurseWithArray(array);
+}
 
 async function metaParseAST(query) {
   const result = {
-    data: {}
+    data: {},
   };
   const queryCST = { operationType: '', fields: [] };
   const queryAST = parse(query);
@@ -317,7 +316,7 @@ async function metaParseAST(query) {
     SelectionSet: {
       enter(node, kind, parent, path, ancestors) {
         // Top-level queries...
-        if(parent.kind === "OperationDefinition") {
+        if (parent.kind === 'OperationDefinition') {
           const selections = node.selections; // [ fieldTypeObject]
           selections.forEach((selection) => {
             // const field = selection.name.value;
@@ -333,14 +332,13 @@ async function metaParseAST(query) {
           });
         } else {
           // Anything other than a top-level query inside of ROOT_QUERY...
-          
-        } 
+        }
       },
     },
   });
   console.log('result outside of visit =', result);
-  return queryCST
-};
+  return queryCST;
+}
 
 /*
  * Check metadata object for inclusion of field names that are included in "doNotCache" Configuration Object
@@ -365,7 +363,7 @@ function doNotCacheCheck(queryCST, urlObject) {
   return false;
 }
 
-async function generateClientSchema(){
+async function generateClientSchema() {
   const presult = await get('queries', 'rockMortyIntrospectionResult');
   console.log(presult);
   const result = await buildClientSchema(presult.data);
