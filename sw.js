@@ -11,7 +11,7 @@ import { parse, visit } from 'graphql/language';
  * Grab settings from IDB set during activation.
  * Do this before registering our event listeners.
  */
-let settings = {};
+const settings = {};
 self.addEventListener('activate', async () => {
   try {
     await Promise.all(
@@ -52,7 +52,8 @@ self.addEventListener('fetch', async (fetchEvent) => {
         metrics.save(hashedQuery);
         return new Response(JSON.stringify(data), { status: 200 });
       } catch (err) {
-        sw_error_log('There was an error in the caching logic!', err.message);
+        /* Global error catch. Catches errors and logs more detailed information. */
+        sw_error_log('There was an error in the caching logic!', err);
         return await fetch(clone);
       }
     }
@@ -66,22 +67,53 @@ self.addEventListener('fetch', async (fetchEvent) => {
  and sends it back. Updates the cache asynchronously after response.
 */
 async function runCachingLogic({ urlObject, method, headers, metrics, request }) {
-  const { query, variables } =
-    method === 'GET' ? getQueryFromUrl(urlObject) : await getQueryFromBody(request);
+  let query, variables;
+  try {
+    ({ query, variables } =
+      method === 'GET' ? getQueryFromUrl(urlObject) : await getQueryFromBody(request));
+  } catch (err) {
+    sw_error_log('There was an error getting the query/variables from the request!');
+    throw err;
+  }
 
+  /* We need to pull of metadata from the query in order to parse through
+   * our normalized cache. First, we're going to see if
+   */
   const metadata = metaParseAST(query);
+  console.log('metadata of query =', metadata);
   if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject) === true) {
-    const responseData = await executeQuery({
-      urlObject,
-      method,
-      headers,
-      body,
-    });
+    let responseData;
+    try {
+      responseData = await executeQuery({
+        urlObject,
+        method,
+        headers,
+        body,
+      });
+    } catch (err) {
+      sw_error_log('There was an error getting the response data!');
+      throw err;
+    }
+
     return responseData;
   }
-  const hashedQuery = ourMD5(query.concat(variables)); // NOTE: Variables could be null, that's okay!
-  const body = JSON.stringify({ query, variables });
-  const cachedData = await checkQueryExists(hashedQuery);
+  let cachedData;
+  let hashedQuery;
+  let body;
+  try {
+    hashedQuery = ourMD5(query.concat(variables)); // NOTE: Variables could be null, that's okay!
+    body = JSON.stringify({ query, variables });
+    cachedData = await checkQueryExists(hashedQuery);
+  } catch (err) {
+    sw_error_log('There was an error getting the cached data!');
+    throw err;
+  }
+
+  /* If the data is in the cache and the cache is fresh, then
+   * return the data from the cache. If it's not fresh or not in the cache,
+   * then execute the query to the API and update the cache.
+   */
+
   if (cachedData && checkCachedQueryIsFresh(cachedData.lastApiCall)) {
     metrics.isCached = true;
     sw_log('Fetched from cache');
@@ -116,7 +148,13 @@ function getQueryFromUrl(urlObject) {
  * Gets the query and variables from a POST request returns them
  */
 const getQueryFromBody = async (request) => {
-  const { query, variables } = await request.json();
+  let query, variables;
+  try {
+    ({ query, variables } = await request.json());
+  } catch (err) {
+    sw_error_log('We couldn\'t get the query from the request body!');
+    throw err;
+  }
   return { query, variables };
 };
 
@@ -133,9 +171,14 @@ async function checkQueryExists(hashedQuery) {
  * and the lastApiCall occured more than cacheExpirationLimit milliseconds ago
  */
 function checkCachedQueryIsFresh(lastApiCall) {
-  const { cacheExpirationLimit } = settings;
-  if (!cacheExpirationLimit) return true;
-  return Date.now() - lastApiCall < cacheExpirationLimit;
+  try {
+    const { cacheExpirationLimit } = settings;
+    if (!cacheExpirationLimit) return true;
+    return Date.now() - lastApiCall < cacheExpirationLimit;
+  } catch (err) {
+    sw_error_log('Could not check if cached query is fresh inside settings.');
+    throw err;
+  }
 }
 
 /* If the query doesn't exist in the cache, then execute
@@ -158,11 +201,15 @@ async function executeQuery({ urlObject, method, headers, body }) {
 /* Write the result of the query into cache.
  * Add the time it was called to the API for expiration purposes.
  */
-function writeToCache({ hashedQuery, data }) {
+async function writeToCache({ hashedQuery, data }) {
   if (!data) return;
-  set('queries', hashedQuery, { data, lastApiCall: Date.now() })
-    .then(() => sw_log('Wrote response to cache.'))
-    .catch((err) => sw_error_log('Could not write response to cache', err.message));
+  try {
+    await set('queries', hashedQuery, { data, lastApiCall: Date.now() });
+    sw_log('Wrote response to cache.');
+  } catch (err) {
+    sw_error_log('Could not write response to cache!', err.message);
+    throw err;
+  }
 }
 
 // Logic to write normalized cache data to indexedDB
@@ -203,6 +250,7 @@ async function executeAndUpdate({ hashedQuery, urlObject, method, headers, body 
 function metaParseAST(query) {
   const queryCST = { operationType: '', fields: [] };
   const queryAST = parse(query);
+  console.log('queryAST in metaParseAST =', queryAST);
   visit(queryAST, {
     OperationDefinition: {
       enter(node) {

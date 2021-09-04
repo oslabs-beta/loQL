@@ -62,4 +62,3 @@ function flattenArray({ value, childKey }) {
     return subArrayVal;
   });
 }
-
