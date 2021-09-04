@@ -1,9 +1,10 @@
 import { sw_log, sw_error_log } from './loggers';
-import { get, set } from './db';
+import { get, set, setMany } from './db';
 import { Metrics } from './Metrics';
 import { validSettings } from './index';
 import { ourMD5 } from './md5';
 import { parse, visit } from 'graphql/language';
+import { normalizeResult } from './normalizeResult';
 
 /*
  * Grab settings from IDB set during activation.
@@ -78,6 +79,7 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
    * our normalized cache. First, we're going to see if
    */
   const metadata = metaParseAST(query);
+  console.log('metadata of query =', metadata);
   if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject) === true) {
     let responseData;
     try {
@@ -111,6 +113,7 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
    * return the data from the cache. If it's not fresh or not in the cache,
    * then execute the query to the API and update the cache.
    */
+
   if (cachedData && checkCachedQueryIsFresh(cachedData.lastApiCall)) {
     metrics.isCached = true;
     sw_log('Fetched from cache');
@@ -209,6 +212,22 @@ async function writeToCache({ hashedQuery, data }) {
   }
 }
 
+// Logic to write normalized cache data to indexedDB
+async function writeToNormalizedCache({ normalizedData }) {
+  const arrayKeyVals = normalizedData.denestedObjects.map(e => Object.entries(e)[0]);
+  const saveData = await setMany('queries', arrayKeyVals);
+  const rootQuery = await get('queries', 'ROOT_QUERY');
+  if (!rootQuery) {
+    await set('queries', 'ROOT_QUERY', normalizedData.rootQueryObject)
+  } else {
+    const expandedRoot = {
+      ...rootQuery,
+      ...normalizedData.rootQueryObject
+    };
+    await set('queries', 'ROOT_QUERY', expandedRoot);
+  }
+}
+
 /*
  * Cache-update functionality (part of config object)
  * When a request comes in from the client, deliver the content from the cache (if possible) as usual.
@@ -219,6 +238,9 @@ async function executeAndUpdate({ hashedQuery, urlObject, method, headers, body 
   const data = await executeQuery({ urlObject, method, headers, body });
   // NOTE: currently not doing any type of check to see if "new" result is actually different from old data
   writeToCache({ hashedQuery, data });
+  console.log('data before normalize =', data);
+  const normalizedData = normalizeResult(data.data);
+  writeToNormalizedCache({ normalizedData });
   return data;
 }
 
@@ -228,6 +250,7 @@ async function executeAndUpdate({ hashedQuery, urlObject, method, headers, body 
 function metaParseAST(query) {
   const queryCST = { operationType: '', fields: [] };
   const queryAST = parse(query);
+  console.log('queryAST in metaParseAST =', queryAST);
   visit(queryAST, {
     OperationDefinition: {
       enter(node) {

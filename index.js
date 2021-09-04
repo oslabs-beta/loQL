@@ -50,7 +50,7 @@ export const register = async (userSettings) => {
   });
 
   if (navigator.serviceWorker) {
-    await setMany('gql-store', 'settings', Object.entries(settings));
+    await setMany('settings', Object.entries(settings));
     setupMetrics();
     navigator.serviceWorker
       .register('./sw.js')
