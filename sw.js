@@ -78,7 +78,7 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
   /* We need to pull of metadata from the query in order to parse through
    * our normalized cache. First, we're going to see if
    */
-  const metadata = metaParseAST(query);
+  const metadata = await metaParseAST(query);
   console.log('metadata of query =', metadata);
   if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject) === true) {
     let responseData;
@@ -247,10 +247,30 @@ async function executeAndUpdate({ hashedQuery, urlObject, method, headers, body 
 /*
  * Create AST and extract metadata relevant info: operation type (query/mutation/subscription/etc.), fields
  */
-function metaParseAST(query) {
+
+function recurseWithArray (resultFromDb) {
+  Promise.all(resultFromDb.map(ref => get('queries', ref.substr(6))))
+  .then(arrayOfResults => {
+    console.log(arrayOfResults)
+    result.data[field] = arrayOfResults;
+    console.log('final result =', result);
+  });
+};
+
+function recurseWithObject () {
+  // If we encounter an array in this function
+  recurseWithArray(array)
+}
+
+
+async function metaParseAST(query) {
+  const result = {
+    data: {}
+  };
   const queryCST = { operationType: '', fields: [] };
   const queryAST = parse(query);
-  console.log('queryAST in metaParseAST =', queryAST);
+  const rootQueryObject = await get('queries', 'ROOT_QUERY');
+  console.log('RootQueryObject =', rootQueryObject);
   visit(queryAST, {
     OperationDefinition: {
       enter(node) {
@@ -258,20 +278,32 @@ function metaParseAST(query) {
       },
     },
     SelectionSet: {
-      enter(node /*, key, parent, path, ancestors*/) {
-        /*console.log("NODE ", node);
-        console.log("KEY ", key);
-        console.log("PARENT ", parent);
-        console.log("PATH ", path); // How to drill into the query to get the exact node
-        console.log("ANCESTORS ", ancestors);
-        */
-        const selections = node.selections;
-        selections.forEach((selection) => queryCST.fields.push(selection.name.value));
+      enter(node, kind, parent, path, ancestors) {
+        // Top-level queries...
+        if(parent.kind === "OperationDefinition") {
+          const selections = node.selections; // [ fieldTypeObject]
+          selections.forEach((selection) => {
+            // const field = selection.name.value;
+            // const resultFromDb = rootQueryObject[field];
+            // queryCST.fields.push(field);
+            // if(Array.isArray(resultFromDb)) {
+            //   recurseWithArray(resultFromDb);
+            //   // [{ hi: [] }, { hi: [] }, { hi: []}]
+            // } else {
+            //   recurseWithObject(resultFromDb);
+            //   // If top-level result is an object...
+            // }
+          });
+        } else {
+          // Anything other than a top-level query inside of ROOT_QUERY...
+          
+        } 
       },
     },
   });
-  return queryCST;
-}
+  console.log('result outside of visit =', result);
+  return queryCST
+};
 
 /*
  * Check metadata object for inclusion of field names that are included in "doNotCache" Configuration Object
