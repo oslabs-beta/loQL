@@ -2,7 +2,7 @@ import { setMany } from './db';
 import { sw_log, sw_error_log } from './loggers';
 import { avgDiff, cachedAvg, uncachedAvg, summary } from './Metrics';
 
-// gqlEndpoints: an array of urls, as strings, listing every graphql endpoint which may be queried from the client api 
+// gqlEndpoints: an array of urls, as strings, listing every graphql endpoint which may be queried from the client api
 // useMetrics: Enable or disable saving caching metrics to IndexDB
 // cacheMethod: Process for requesting and serving data to client
 // cacheExpirationLimit: Amount of time (in milliseconds) before data is refetched from API, not served from cache
@@ -36,9 +36,7 @@ export const defaultSettings = {
 export const register = async (userSettings) => {
   let settings;
   try {
-    settings = userSettings
-      ? { ...defaultSettings, ...userSettings }
-      : defaultSettings;
+    settings = userSettings ? { ...defaultSettings, ...userSettings } : defaultSettings;
   } catch (err) {
     throw new Error('Please pass an object to configure the cache.');
   }
@@ -58,13 +56,9 @@ export const register = async (userSettings) => {
         sw_log('Service worker registered.');
       })
       .catch((err) => {
-        sw_log('Service worker not registered.');
-        console.log(err);
+        sw_error_log('Service worker not registered.');
+        console.error(err);
       });
-
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      console.log(event);
-    });
   } else {
     sw_log('Service workers are not possible on this browser.');
   }

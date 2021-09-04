@@ -4,7 +4,8 @@ import { Metrics } from './Metrics';
 import { validSettings } from './index';
 import { ourMD5 } from './md5';
 import { parse, visit } from 'graphql/language';
-import { normalizeResult } from './normalizeResult';
+
+// import { normalizeResult } from './normalizeResult';
 
 /*
  * Grab settings from IDB set during activation.
@@ -64,17 +65,9 @@ self.addEventListener('fetch', async (fetchEvent) => {
  Generates response data, either through API call or from cache,
  and sends it back. Updates the cache asynchronously after response.
 */
-async function runCachingLogic({
-  urlObject,
-  method,
-  headers,
-  metrics,
-  request,
-}) {
+async function runCachingLogic({ urlObject, method, headers, metrics, request }) {
   const { query, variables } =
-    method === 'GET'
-      ? getQueryFromUrl(urlObject)
-      : await getQueryFromBody(request);
+    method === 'GET' ? getQueryFromUrl(urlObject) : await getQueryFromBody(request);
 
   const metadata = metaParseAST(query);
   if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject) === true) {
@@ -85,7 +78,7 @@ async function runCachingLogic({
       body,
     });
     return responseData;
-  };
+  }
   const hashedQuery = ourMD5(query.concat(variables)); // NOTE: Variables could be null, that's okay!
   const body = JSON.stringify({ query, variables });
   const cachedData = await checkQueryExists(hashedQuery);
@@ -115,8 +108,7 @@ async function runCachingLogic({
 function getQueryFromUrl(urlObject) {
   const query = urlObject.searchParams.get('query');
   const variables = urlObject.searchParams.get('variables');
-  if (!query)
-    throw new Error(`This HTTP GET request is not a valid GQL request: ${url}`);
+  if (!query) throw new Error(`This HTTP GET request is not a valid GQL request: ${url}`);
   return { query, variables };
 }
 
@@ -170,22 +162,20 @@ function writeToCache({ hashedQuery, data }) {
   if (!data) return;
   set('queries', hashedQuery, { data, lastApiCall: Date.now() })
     .then(() => sw_log('Wrote response to cache.'))
-    .catch((err) =>
-      sw_error_log('Could not write response to cache', err.message)
-    );
+    .catch((err) => sw_error_log('Could not write response to cache', err.message));
 }
 
 // Logic to write normalized cache data to indexedDB
 async function writeToNormalizedCache({ normalizedData }) {
-  const arrayKeyVals = normalizedData.denestedObjects.map(e => Object.entries(e)[0]);
+  const arrayKeyVals = normalizedData.denestedObjects.map((e) => Object.entries(e)[0]);
   const saveData = await setMany('queries', arrayKeyVals);
   const rootQuery = await get('queries', 'ROOT_QUERY');
   if (!rootQuery) {
-    await set('queries', 'ROOT_QUERY', normalizedData.rootQueryObject)
+    await set('queries', 'ROOT_QUERY', normalizedData.rootQueryObject);
   } else {
     const expandedRoot = {
       ...rootQuery,
-      ...normalizedData.rootQueryObject
+      ...normalizedData.rootQueryObject,
     };
     await set('queries', 'ROOT_QUERY', expandedRoot);
   }
@@ -197,19 +187,13 @@ async function writeToNormalizedCache({ normalizedData }) {
  * In addition to the normal logic, even if the response is already in the cache, follow through with
  * sending the request to the server, updating the cache upon receipt of response.
  */
-async function executeAndUpdate({
-  hashedQuery,
-  urlObject,
-  method,
-  headers,
-  body,
-}) {
+async function executeAndUpdate({ hashedQuery, urlObject, method, headers, body }) {
   const data = await executeQuery({ urlObject, method, headers, body });
-  // NOTE: currently not doing any type of check to see if "new" result is actually different from old data
   writeToCache({ hashedQuery, data });
-  console.log('data before normalize =', data);
-  const normalizedData = normalizeResult(data.data);
-  writeToNormalizedCache({ normalizedData });
+
+  /* This feature is still under development. */
+  // const normalizedData = normalizeResult(data.data);
+  // writeToNormalizedCache({ normalizedData });
   return data;
 }
 
@@ -226,17 +210,9 @@ function metaParseAST(query) {
       },
     },
     SelectionSet: {
-      enter(node /*, key, parent, path, ancestors*/) {
-        /*console.log("NODE ", node);
-        console.log("KEY ", key);
-        console.log("PARENT ", parent);
-        console.log("PATH ", path); // How to drill into the query to get the exact node
-        console.log("ANCESTORS ", ancestors);
-        */
+      enter(node, kind, parent, path, ancestors) {
         const selections = node.selections;
-        selections.forEach((selection) =>
-          queryCST.fields.push(selection.name.value)
-        );
+        selections.forEach((selection) => queryCST.fields.push(selection.name.value));
       },
     },
   });
@@ -252,7 +228,7 @@ function doNotCacheCheck(queryCST, urlObject) {
   let doNotCache = [];
   const fieldsArray = queryCST.fields;
   if (endpoint in settings.doNotCacheCustom) {
-    doNotCache = settings.doNotCacheCustom[endpoint].concat(...settings.doNotCacheGlobal)
+    doNotCache = settings.doNotCacheCustom[endpoint].concat(...settings.doNotCacheGlobal);
   } else {
     doNotCache = [...settings.doNotCacheGlobal];
   }
@@ -265,4 +241,3 @@ function doNotCacheCheck(queryCST, urlObject) {
   }
   return false;
 }
-
