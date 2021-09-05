@@ -64,7 +64,7 @@ export async function avgDiff(hash) {
   });
 }
 
-export async function summary() {
+export async function summary(log) {
   const store = 'metrics';
   const metricValues = await getAll(store); // An array of objects from the Metrics store
   const individualCachedSpeeds = [];
@@ -124,6 +124,9 @@ export async function summary() {
     recentQuery: { averageCachedTime: 1 },
   };
 
-  console.table(total);
+  // Don't log in frontend if we pass false.
+  if (log !== false) {
+    console.table(total);
+  }
   return totalDetail;
 }
