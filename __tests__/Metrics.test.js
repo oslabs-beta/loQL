@@ -1,4 +1,4 @@
-import { Metrics } from '../Metrics';
+import { Metrics } from '../helpers/metrics';
 
 xdescribe('The Metrics class.', () => {
   test('Metrics class should create a new instance with the proper fields and methods.', () => {

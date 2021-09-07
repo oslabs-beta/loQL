@@ -1,8 +1,8 @@
-import { sw_log, sw_error_log } from './loggers';
-import { get, set, setMany } from './db';
-import { Metrics } from './Metrics';
+import { sw_log, sw_error_log } from './helpers/loggers';
+import { get, set, setMany } from './helpers/initializeIndexDb';
+import { Metrics } from './helpers/metrics';
 import { validSettings } from './index';
-import { ourMD5 } from './md5';
+import { ourMD5 } from './helpers/md5';
 import { parse, visit } from 'graphql/language';
 
 // import { normalizeResult } from './normalizeResult';
