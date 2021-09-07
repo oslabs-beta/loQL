@@ -4,7 +4,8 @@ import { Metrics } from './Metrics';
 import { validSettings } from './index';
 import { ourMD5 } from './md5';
 import { parse, visit } from 'graphql/language';
-import { normalizeResult } from './normalizeResult';
+
+// import { normalizeResult } from './normalizeResult';
 
 /*
  * Grab settings from IDB set during activation.
@@ -79,8 +80,7 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
    * our normalized cache. First, we're going to see if
    */
   const metadata = metaParseAST(query);
-  console.log('metadata of query =', metadata);
-  if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject) === true) {
+  if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject, settings) === true) {
     let responseData;
     try {
       responseData = await executeQuery({
@@ -96,7 +96,6 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
 
     return responseData;
   }
-
   let cachedData;
   let hashedQuery;
   let body;
@@ -137,7 +136,7 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
  * Gets the query and variables from a GET request url and returns them
  * EG: 'http://localhost:4000/graphql?query=query\{human(input:\{id:"1"\})\{name\}\}'
  */
-function getQueryFromUrl(urlObject) {
+export function getQueryFromUrl(urlObject) {
   const query = urlObject.searchParams.get('query');
   const variables = urlObject.searchParams.get('variables');
   if (!query) throw new Error(`This HTTP GET request is not a valid GQL request: ${url}`);
@@ -147,7 +146,7 @@ function getQueryFromUrl(urlObject) {
 /*
  * Gets the query and variables from a POST request returns them
  */
-const getQueryFromBody = async (request) => {
+export async function getQueryFromBody(request) {
   let query, variables;
   try {
     ({ query, variables } = await request.json());
@@ -156,10 +155,10 @@ const getQueryFromBody = async (request) => {
     throw err;
   }
   return { query, variables };
-};
+}
 
 // Checks for existence of hashed query in IDB
-async function checkQueryExists(hashedQuery) {
+export async function checkQueryExists(hashedQuery) {
   try {
     return await get('queries', hashedQuery);
   } catch (err) {
@@ -170,7 +169,7 @@ async function checkQueryExists(hashedQuery) {
 /* Returns false if the cacheExpirationLimit has been set,
  * and the lastApiCall occured more than cacheExpirationLimit milliseconds ago
  */
-function checkCachedQueryIsFresh(lastApiCall) {
+export function checkCachedQueryIsFresh(lastApiCall) {
   try {
     const { cacheExpirationLimit } = settings;
     if (!cacheExpirationLimit) return true;
@@ -184,7 +183,7 @@ function checkCachedQueryIsFresh(lastApiCall) {
 /* If the query doesn't exist in the cache, then execute
  * the query and return the result.
  */
-async function executeQuery({ urlObject, method, headers, body }) {
+export async function executeQuery({ urlObject, method, headers, body }) {
   try {
     const options = { method, headers };
     if (method === 'POST') {
@@ -201,7 +200,7 @@ async function executeQuery({ urlObject, method, headers, body }) {
 /* Write the result of the query into cache.
  * Add the time it was called to the API for expiration purposes.
  */
-async function writeToCache({ hashedQuery, data }) {
+export async function writeToCache({ hashedQuery, data }) {
   if (!data) return;
   try {
     await set('queries', hashedQuery, { data, lastApiCall: Date.now() });
@@ -213,16 +212,16 @@ async function writeToCache({ hashedQuery, data }) {
 }
 
 // Logic to write normalized cache data to indexedDB
-async function writeToNormalizedCache({ normalizedData }) {
-  const arrayKeyVals = normalizedData.denestedObjects.map(e => Object.entries(e)[0]);
+export async function writeToNormalizedCache({ normalizedData }) {
+  const arrayKeyVals = normalizedData.denestedObjects.map((e) => Object.entries(e)[0]);
   const saveData = await setMany('queries', arrayKeyVals);
   const rootQuery = await get('queries', 'ROOT_QUERY');
   if (!rootQuery) {
-    await set('queries', 'ROOT_QUERY', normalizedData.rootQueryObject)
+    await set('queries', 'ROOT_QUERY', normalizedData.rootQueryObject);
   } else {
     const expandedRoot = {
       ...rootQuery,
-      ...normalizedData.rootQueryObject
+      ...normalizedData.rootQueryObject,
     };
     await set('queries', 'ROOT_QUERY', expandedRoot);
   }
@@ -234,23 +233,22 @@ async function writeToNormalizedCache({ normalizedData }) {
  * In addition to the normal logic, even if the response is already in the cache, follow through with
  * sending the request to the server, updating the cache upon receipt of response.
  */
-async function executeAndUpdate({ hashedQuery, urlObject, method, headers, body }) {
+export async function executeAndUpdate({ hashedQuery, urlObject, method, headers, body }) {
   const data = await executeQuery({ urlObject, method, headers, body });
-  // NOTE: currently not doing any type of check to see if "new" result is actually different from old data
   writeToCache({ hashedQuery, data });
-  console.log('data before normalize =', data);
-  const normalizedData = normalizeResult(data.data);
-  writeToNormalizedCache({ normalizedData });
+
+  /* This feature is still under development. */
+  // const normalizedData = normalizeResult(data.data);
+  // writeToNormalizedCache({ normalizedData });
   return data;
 }
 
 /*
  * Create AST and extract metadata relevant info: operation type (query/mutation/subscription/etc.), fields
  */
-function metaParseAST(query) {
+export function metaParseAST(query) {
   const queryCST = { operationType: '', fields: [] };
   const queryAST = parse(query);
-  console.log('queryAST in metaParseAST =', queryAST);
   visit(queryAST, {
     OperationDefinition: {
       enter(node) {
@@ -258,13 +256,7 @@ function metaParseAST(query) {
       },
     },
     SelectionSet: {
-      enter(node /*, key, parent, path, ancestors*/) {
-        /*console.log("NODE ", node);
-        console.log("KEY ", key);
-        console.log("PARENT ", parent);
-        console.log("PATH ", path); // How to drill into the query to get the exact node
-        console.log("ANCESTORS ", ancestors);
-        */
+      enter(node, kind, parent, path, ancestors) {
         const selections = node.selections;
         selections.forEach((selection) => queryCST.fields.push(selection.name.value));
       },
@@ -277,21 +269,19 @@ function metaParseAST(query) {
  * Check metadata object for inclusion of field names that are included in "doNotCache" Configuration Object
  * setting. If match is found, execute query and return response to client, bypassing the cache for the entire query
  */
-function doNotCacheCheck(queryCST, urlObject) {
+export function doNotCacheCheck(queryCST, urlObject, settings) {
   const endpoint = urlObject.origin + urlObject.pathname;
   let doNotCache = [];
   const fieldsArray = queryCST.fields;
   if (endpoint in settings.doNotCacheCustom) {
     doNotCache = settings.doNotCacheCustom[endpoint].concat(...settings.doNotCacheGlobal);
   } else {
-    doNotCache = [...settings.doNotCacheGlobal];
+    doNotCache = settings.doNotCacheGlobal;
   }
-  for (let i = 0; i < fieldsArray.length; i++) {
-    for (let k = 0; k < doNotCache.length; k++) {
-      if (fieldsArray[i] == doNotCache[k]) {
-        return true;
-      }
-    }
+
+  for (const field of fieldsArray) {
+    if (doNotCache.includes(field)) return true;
   }
+
   return false;
 }
