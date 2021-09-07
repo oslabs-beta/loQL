@@ -1,4 +1,4 @@
-import { sw_log, sw_error_log } from '../loggers';
+import { sw_log, sw_error_log } from '../helpers/loggers';
 
 xdescribe('The loggers.', () => {
   test('The sw_log function should log to the console an arbitrary number of messages.', () => {

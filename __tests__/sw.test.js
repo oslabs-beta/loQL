@@ -1,4 +1,4 @@
-import { doNotCacheCheck } from '../sw';
+import { doNotCacheCheck } from '../loQL';
 
 describe('doNotCacheCheck', () => {
   const settings = {

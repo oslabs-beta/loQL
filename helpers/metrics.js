@@ -1,5 +1,5 @@
 import { sw_log, sw_error_log } from './loggers';
-import { get, set, keys, getAll } from './db';
+import { get, set, keys, getAll } from './initializeIndexDb';
 
 export class Metrics {
   constructor() {

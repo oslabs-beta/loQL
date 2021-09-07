@@ -1,4 +1,4 @@
-import { ourMD5 } from '../md5';
+import { ourMD5 } from '../helpers/md5';
 
 xdescribe('The hashing function.', () => {
   test('Function should hash string to the same result each time.', () => {
