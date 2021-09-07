@@ -1,6 +1,6 @@
-import { setMany } from './db';
-import { sw_log, sw_error_log } from './loggers';
-import { avgDiff, cachedAvg, uncachedAvg, summary } from './Metrics';
+import { setMany } from './helpers/initializeIndexDb';
+import { sw_log, sw_error_log } from './helpers/loggers';
+import { avgDiff, cachedAvg, uncachedAvg, summary } from './helpers/metrics';
 
 /* gqlEndpoints: an array of urls, as strings, listing every graphql endpoint which may be queried from the client api.
  * useMetrics: Enable or disable saving caching metrics to IndexDB.
@@ -50,7 +50,7 @@ export const register = async (userSettings) => {
     await setMany('settings', Object.entries(settings));
     setupMetrics();
     navigator.serviceWorker
-      .register('./sw.js')
+      .register('./loQL.js')
       .then((_) => {
         sw_log('Service worker registered.');
       })

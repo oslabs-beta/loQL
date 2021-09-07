@@ -1,4 +1,4 @@
-import { normalizeResult } from '../normalizeResult';
+import { normalizeResult } from '../helpers/normalizeResult';
 
 xdescribe('Normalizer.', () => {
   test('Function should successfully normalize single object', () => {
