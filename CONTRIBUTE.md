@@ -15,16 +15,14 @@ Thank you for your interest in improving loQL.
 
 We use GitHub issues to track public bugs. Please ensure your description is clear and has sufficient instructions to be able to reproduce the issue.
 
-## Coding Style (NOTES: tbd)
+## Coding Style 
 
-2 spaces for indentation rather than tabs
-80 character line length
-Run npm run eslint to comform to our lint rules
+Linting enforced by configuration in eslintrc.json file.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under Quell's MIT License.
+By contributing, you agree that your contributions will be licensed under loQL's MIT License.
 
 ### References
 
-This document was adapted from the open-source contribution guidelines for [Facebook's Draft](https://github.com/facebook/draft-js/blob/a9316a723f9e918afde44dea68b5f9f39b7d9b00/CONTRIBUTING.md)
+This document was adapted from the open-source contribution guidelines for [Facebook's Draft](https://github.com/facebook/draft-js/blob/master/CONTRIBUTING.md)
