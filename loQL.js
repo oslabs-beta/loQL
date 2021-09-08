@@ -5,14 +5,18 @@ import { validSettings } from './index';
 import { ourMD5 } from './helpers/md5';
 import { parse, visit } from 'graphql/language';
 
-// import { normalizeResult } from './normalizeResult';
+/* Ensure newer versions of service worker take over tab upon reload */
+self.addEventListener('install', function (event) {
+  event.waitUntil(self.skipWaiting());
+});
 
 /*
  * Grab settings from IDB set during activation.
  * Do this before registering our event listeners.
  */
 const settings = {};
-self.addEventListener('activate', async () => {
+self.addEventListener('activate', async (event) => {
+  event.waitUntil(self.clients.claim()); // Take control on first load.
   try {
     await Promise.all(
       validSettings.map(async (setting) => {
@@ -39,7 +43,7 @@ self.addEventListener('fetch', async (fetchEvent) => {
   const endpoint = urlObject.origin + urlObject.pathname;
 
   /* Check if the fetch request URL matches a graphQL endpoint as defined in settings. */
-  if (gqlEndpoints.indexOf(endpoint) !== -1) {
+  if (gqlEndpoints && gqlEndpoints.indexOf(endpoint) !== -1) {
     async function fetchAndGetResponse() {
       try {
         const { data, hashedQuery } = await runCachingLogic({
