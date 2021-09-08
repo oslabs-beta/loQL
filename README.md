@@ -29,7 +29,7 @@ f. doNotCacheCustom (Optional): Similar to above, but endpoint-specific. (Object
 ```javascript
 {
   gqlEndpoints: ['http://localhost:<###>/api/graphql', 'https://<abc>.com/graphql'],
-  useMetric: false,
+  useMetrics: false,
   cacheExpirationLimit: 20000,
   cacheMethod: 'cache-network',
   doNotCacheGlobal: [],
@@ -41,20 +41,20 @@ f. doNotCacheCustom (Optional): Similar to above, but endpoint-specific. (Object
 ```
 
 ## Features
-- Enables offline use: IndexedDB storage is high-capacity and persists, while keeping reads/writes asynchronous.
+- Enables offline use: IndexedDB storage provides high-capacity and persistent storage, while keeping reads/writes asynchronous
 - Minimum-dependency: No server-side component, avoid use of large libraries
-- Cache validation: Keep data fresh with shorter expiration limits, or cache-network strategy
-- Simple: Install package, configure one mandatory setting, and go
-- Flexible: Easily exempt certain types of queries from caching
+- Cache validation: Keep data fresh with shorter expiration limits, cache-network strategy, or both!
+- Simple: Install package, pass in Configuration Object, start caching
+- Flexible: Easily exempt, specific, desired types of queries from being cached
 
 ## Usage Notes (NOTE: Work in progress)
-- unsupported operations
+- Caching is currently only supported for query-type operations. Mutations, subscriptions, etc will still run,
+  but will not be cached. 
 - normalization & deep nesting
 
 ## Supported Browsers
-Desktop: Edge, Firefox, Chrome, Safari, Opera
-
-Mobile: Firefox, Chrome, Android Browser, Samsung Internet
+- Desktop: Edge, Firefox, Chrome, Safari, Opera
+- Mobile: Firefox, Chrome, Android Browser, Samsung Internet
 
 ## Contributing
 Contributions are welcome. Please read CONTRIBUTE.md prior to making a Pull Request.
