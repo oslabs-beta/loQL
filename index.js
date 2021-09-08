@@ -2,12 +2,12 @@ import { setMany } from './helpers/initializeIndexDb';
 import { sw_log, sw_error_log } from './helpers/loggers';
 import { avgDiff, cachedAvg, uncachedAvg, summary } from './helpers/metrics';
 
-/* gqlEndpoints: an array of urls, as strings, listing every graphql endpoint which may be queried from the client api.
- * useMetrics: Enable or disable saving caching metrics to IndexDB.
- * cacheMethod: Process for requesting and serving data to client.
- * cacheExpirationLimit: Amount of time (in milliseconds) before data is refetched from API, not served from cache.
- * doNotCache: An object where all keys besides the default "global" are endpoints, and the corresponding value is an array of strings that correspond to specific types whose inclusion in a query exempts it from caching.
- * doNotCache.global: An array of strings (objects/scalars) and whose inclusion will exempt a query response from being cached regardless of the GraphQL request endpoint. An empty array for custom endpoint keys will exempt all reponses from the respective endpoint key.
+/* gqlEndpoints: An array of endpoint URLs, as strings, to explicitly allow added endpoints to be queried from the client API.
+ * useMetrics: Enable or disable saving caching metrics to IndexedDB.
+ * cacheMethod: Desired strategy for serving/updating cached data to the client.
+ * cacheExpirationLimit: Amount of time (in milliseconds) before cached data is refetched from GraphQL endpoint.
+ * doNotCacheGlobal: An array of strings (types, as per the endpoint-specific GQL schema) and whose inclusion will exempt a query response from being cached regardless of the GraphQL request endpoint.
+ * doNotCacheCustom: An object where each key is an endpoint, and the corresponding value is an array of strings that references specific types (as defined in the GQL schema) whose inclusion in a query will exempt it from caching.
  */
 
 export const validSettings = [
