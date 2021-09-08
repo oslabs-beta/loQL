@@ -1,5 +1,5 @@
 {
-  "name": "loql",
+  "name": "loql-cache",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,6 +10,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/oslabs-beta/loQL.git"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [],
   "author": "Harrison Cramer <kingofcramers.dev@gmail.com> (https://github.com/harrisoncramer), Andrew Lee <lolfill0104@gmail.com> (https://github.com/lolfill), Konstantin Hamilton <konst@ntinh.am> (https://github.com/uitie)",
