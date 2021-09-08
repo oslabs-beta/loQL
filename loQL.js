@@ -38,7 +38,7 @@ self.addEventListener('fetch', async (fetchEvent) => {
   const { gqlEndpoints } = settings;
   const endpoint = urlObject.origin + urlObject.pathname;
 
-  //Check if the fetch request URL matches a graphQL endpoint as defined in settings
+  /* Check if the fetch request URL matches a graphQL endpoint as defined in settings. */
   if (gqlEndpoints.indexOf(endpoint) !== -1) {
     async function fetchAndGetResponse() {
       try {
@@ -76,8 +76,9 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
     throw err;
   }
 
-  /* We need to pull of metadata from the query in order to parse through
-   * our normalized cache. First, we're going to see if
+  /* Extract metadata from the query in order to parse through
+   * our normalized cache. Skip caching logic if query contains fields that are part of
+   * the doNotCache configuration object.
    */
   const metadata = metaParseAST(query);
   if (settings.doNotCacheGlobal && doNotCacheCheck(metadata, urlObject, settings) === true) {
@@ -109,7 +110,7 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
   }
 
   /* If the data is in the cache and the cache is fresh, then
-   * return the data from the cache. If it's not fresh or not in the cache,
+   * return the data from the cache. If data is stale or not in cache,
    * then execute the query to the API and update the cache.
    */
 
@@ -133,7 +134,7 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
 }
 
 /*
- * Gets the query and variables from a GET request url and returns them
+ * Gets the query and variables from a GET request url and returns them.
  * EG: 'http://localhost:4000/graphql?query=query\{human(input:\{id:"1"\})\{name\}\}'
  */
 export function getQueryFromUrl(urlObject) {
@@ -144,7 +145,7 @@ export function getQueryFromUrl(urlObject) {
 }
 
 /*
- * Gets the query and variables from a POST request returns them
+ * Gets the query and variables from a POST request returns them.
  */
 export async function getQueryFromBody(request) {
   let query, variables;
@@ -157,7 +158,7 @@ export async function getQueryFromBody(request) {
   return { query, variables };
 }
 
-// Checks for existence of hashed query in IDB
+// Checks for existence of hashed query in IDB.
 export async function checkQueryExists(hashedQuery) {
   try {
     return await get('queries', hashedQuery);
@@ -167,7 +168,7 @@ export async function checkQueryExists(hashedQuery) {
 }
 
 /* Returns false if the cacheExpirationLimit has been set,
- * and the lastApiCall occured more than cacheExpirationLimit milliseconds ago
+ * and the lastApiCall occured more than cacheExpirationLimit milliseconds ago.
  */
 export function checkCachedQueryIsFresh(lastApiCall) {
   try {
@@ -197,8 +198,8 @@ export async function executeQuery({ urlObject, method, headers, body }) {
   }
 }
 
-/* Write the result of the query into cache.
- * Add the time it was called to the API for expiration purposes.
+/* Write the result of the query to the cache,
+ * and add the time it was called to the API for expiration purposes.
  */
 export async function writeToCache({ hashedQuery, data }) {
   if (!data) return;
@@ -211,7 +212,7 @@ export async function writeToCache({ hashedQuery, data }) {
   }
 }
 
-// Logic to write normalized cache data to indexedDB
+/* Logic to write normalized cache data to indexedDB */
 export async function writeToNormalizedCache({ normalizedData }) {
   const arrayKeyVals = normalizedData.denestedObjects.map((e) => Object.entries(e)[0]);
   const saveData = await setMany('queries', arrayKeyVals);
@@ -228,7 +229,7 @@ export async function writeToNormalizedCache({ normalizedData }) {
 }
 
 /*
- * Cache-update functionality (part of config object)
+ * Cache-update functionality (part of configuration object)
  * When a request comes in from the client, deliver the content from the cache (if possible) as usual.
  * In addition to the normal logic, even if the response is already in the cache, follow through with
  * sending the request to the server, updating the cache upon receipt of response.
@@ -244,7 +245,8 @@ export async function executeAndUpdate({ hashedQuery, urlObject, method, headers
 }
 
 /*
- * Create AST and extract metadata relevant info: operation type (query/mutation/subscription/etc.), fields
+ * Generate an AST from GQL query string, and extract: operation type (query/mutation/subscription/etc), and fields.
+ * Returns this metadata as an object (queryCST).
  */
 export function metaParseAST(query) {
   const queryCST = { operationType: '', fields: [] };
@@ -266,8 +268,8 @@ export function metaParseAST(query) {
 }
 
 /*
- * Check metadata object for inclusion of field names that are included in "doNotCache" Configuration Object
- * setting. If match is found, execute query and return response to client, bypassing the cache for the entire query
+ * Check metadata object for inclusion of field names that are included in "doNotCache" Configuration Objects.
+ * If match is found, execute query and return response to client, bypassing the cache for the entire query.
  */
 export function doNotCacheCheck(queryCST, urlObject, settings) {
   const endpoint = urlObject.origin + urlObject.pathname;
