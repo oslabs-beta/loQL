@@ -94,8 +94,10 @@ export const register = async (userSettings) => {
           console.log(res.data);
           clientSchema.data = buildClientSchema(res.data);
           console.log(typeof clientSchema.data);
-          //await set('schema', 'Schema', clientSchema.data );
           sw_log(printSchema(clientSchema.data));
+          console.log(parse(res.data.__schema));
+          //await set('schema', 'Schema', clientSchema.data );
+          
           //console.log(clientSchema.data);
           /* const ourData = { data: clientSchema };
           const strSch = JSON.stringify(clientSchema._queryType);
@@ -105,7 +107,8 @@ export const register = async (userSettings) => {
       })
       //await set('schema', 'Schema', res.data );
       //sw_log(JSON.stringify(clientSchema.data));
-      console.log(clientSchema.data);
+      console.log(clientSchema);
+      
   } catch (err) {
     sw_log('Error executing schema introspection query');
   }
