@@ -12,7 +12,7 @@ npm install loql
 
 ## Usage
 
-I. Set configuration object:
+I. Set Configuration Object:
 
 a. gqlEndpoints (Required): Add GraphQL endpoint URL's to be enabled for caching. (Array of strings)
 
@@ -42,10 +42,11 @@ f. doNotCacheCustom (Optional): Similar to above, but endpoint-specific. (Object
 
 ## Features
 - Enables offline use: IndexedDB storage provides high-capacity and persistent storage, while keeping reads/writes asynchronous
-- Minimum-dependency: No server-side component, avoid use of large libraries
+- Minimum-dependency: No server-side component, avoid the use of large libraries
 - Cache validation: Keep data fresh with shorter expiration limits, cache-network strategy, or both!
-- Simple: Install package, pass in Configuration Object, start caching
-- Flexible: Easily exempt, specific, desired types of queries from being cached
+- Easy-to-use: Install package, pass in Configuration Object, start caching
+- Flexible: Works with GQL queries made as both fetch POST and GET requests
+  Easily exempt, specific, desired types of queries from being cached
 
 ## Usage Notes (NOTE: Work in progress)
 - Caching is currently only supported for query-type operations. Mutations, subscriptions, etc will still run,

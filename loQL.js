@@ -140,7 +140,7 @@ async function runCachingLogic({ urlObject, method, headers, metrics, request })
 export function getQueryFromUrl(urlObject) {
   const query = urlObject.searchParams.get('query');
   const variables = urlObject.searchParams.get('variables');
-  if (!query) throw new Error(`This HTTP GET request is not a valid GQL request: ${url}`);
+  if (!query) throw new Error(`This HTTP GET request is not a valid GQL request: ${urlObject}`);
   return { query, variables };
 }
 
