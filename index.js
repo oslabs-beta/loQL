@@ -100,18 +100,10 @@ export const register = async (userSettings) => {
           await set('schema', 'Schema', ourData);
           sw_log('Client schema succesfully added to IndexedDB'); */
         } //else { sw_log('Error adding client schema to IndexedDB') }
-<<<<<<< HEAD
-      })
-      //await set('schema', 'Schema', res.data );
-      //sw_log(JSON.stringify(clientSchema.data));
-      console.log(clientSchema);
-      
-=======
       });
     //await set('schema', 'Schema', res.data );
     //sw_log(JSON.stringify(clientSchema.data));
     console.log(clientSchema.data);
->>>>>>> 8a041783aa8c0a4e5630ea9a145fcf08c8acf65a
   } catch (err) {
     sw_log('Error executing schema introspection query');
   }
