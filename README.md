@@ -12,7 +12,7 @@ npm install loql
 
 ## Usage
 
-I. Set configuration object:
+I. Set Configuration Object:
 
 a. gqlEndpoints (Required): Add GraphQL endpoint URL's to be enabled for caching. (Array of strings)
 
@@ -29,7 +29,7 @@ f. doNotCacheCustom (Optional): Similar to above, but endpoint-specific. (Object
 ```javascript
 {
   gqlEndpoints: ['http://localhost:<###>/api/graphql', 'https://<abc>.com/graphql'],
-  useMetric: false,
+  useMetrics: false,
   cacheExpirationLimit: 20000,
   cacheMethod: 'cache-network',
   doNotCacheGlobal: [],
@@ -41,20 +41,21 @@ f. doNotCacheCustom (Optional): Similar to above, but endpoint-specific. (Object
 ```
 
 ## Features
-- Enables offline use: IndexedDB storage is high-capacity and persists, while keeping reads/writes asynchronous.
-- Minimum-dependency: No server-side component, avoid use of large libraries
-- Cache validation: Keep data fresh with shorter expiration limits, or cache-network strategy
-- Simple: Install package, configure one mandatory setting, and go
-- Flexible: Easily exempt certain types of queries from caching
+- Enables offline use: IndexedDB storage provides high-capacity and persistent storage, while keeping reads/writes asynchronous
+- Minimum-dependency: No server-side component, avoid the use of large libraries
+- Cache validation: Keep data fresh with shorter expiration limits, cache-network strategy, or both!
+- Easy-to-use: Install package, pass in Configuration Object, start caching
+- Flexible: Works with GQL queries made as both fetch POST and GET requests
+  Easily exempt, specific, desired types of queries from being cached
 
-## Usage Notes (NOTE: Work in progress)
-- unsupported operations
-- normalization & deep nesting
+## Usage Notes
+- Caching is currently only supported for query-type operations. Mutations, subscriptions, etc will still run,
+  but will not be cached. 
+- Cached data normalization feature is disabled.
 
 ## Supported Browsers
-Desktop: Edge, Firefox, Chrome, Safari, Opera
-
-Mobile: Firefox, Chrome, Android Browser, Samsung Internet
+- Desktop: Edge, Firefox, Chrome, Safari, Opera
+- Mobile: Firefox, Chrome, Android Browser, Samsung Internet
 
 ## Contributing
 Contributions are welcome. Please read CONTRIBUTE.md prior to making a Pull Request.
