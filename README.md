@@ -48,10 +48,10 @@ f. doNotCacheCustom (Optional): Similar to above, but endpoint-specific. (Object
 - Flexible: Works with GQL queries made as both fetch POST and GET requests
   Easily exempt, specific, desired types of queries from being cached
 
-## Usage Notes (NOTE: Work in progress)
+## Usage Notes
 - Caching is currently only supported for query-type operations. Mutations, subscriptions, etc will still run,
   but will not be cached. 
-- normalization & deep nesting
+- Cached data normalization feature is disabled.
 
 ## Supported Browsers
 - Desktop: Edge, Firefox, Chrome, Safari, Opera
