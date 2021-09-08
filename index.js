@@ -67,5 +67,5 @@ export function setupMetrics() {
   window.avgDiff = avgDiff; // The total time saved for a particular query
   window.cachedAvg = cachedAvg; // The average speed for a particular query in the cache
   window.uncachedAvg = uncachedAvg; // The average speed for a particular query from the API
-  window.summary = summary; // Prints the number of cached queries, and information aobut each of them
+  window.summary = summary; // Prints the number of cached queries, and information about each of them
 }
