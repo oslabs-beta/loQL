@@ -4,7 +4,7 @@ import { avgDiff, cachedAvg, uncachedAvg, summary } from './Metrics';
 import { getIntrospectionQuery, buildClientSchema, printSchema } from 'graphql/utilities';
 import { parse, visit } from 'graphql/language';
 
-// gqlEndpoints: an array of urls, as strings, listing every graphql endpoint which may be queried from the client api 
+// gqlEndpoints: an array of urls, as strings, listing every graphql endpoint which may be queried from the client api
 // useMetrics: Enable or disable saving caching metrics to IndexDB
 // cacheMethod: Process for requesting and serving data to client
 // cacheExpirationLimit: Amount of time (in milliseconds) before data is refetched from API, not served from cache
@@ -34,9 +34,7 @@ export const defaultSettings = {
 // Upon SW activation, sw.js will invoke an introspection query to the endpoints specified in settings.
 // Successful query response will generate a clientSchema, from which the data will be parsed and
 // used to populate this global object
-export const clientSchema = {
-
-};
+export const clientSchema = {};
 
 /* Registers service worker pulled in during build steps of webpack/parcel/etc.
  * Also creates settings in IDB for service worker passed during registration step.
@@ -47,9 +45,7 @@ export const register = async (userSettings) => {
   const clientSchemaInfo = {};
 
   try {
-    settings = userSettings
-      ? { ...defaultSettings, ...userSettings }
-      : defaultSettings;
+    settings = userSettings ? { ...defaultSettings, ...userSettings } : defaultSettings;
   } catch (err) {
     throw new Error('Please pass an object to configure the cache.');
   }
@@ -79,18 +75,18 @@ export const register = async (userSettings) => {
   } else {
     sw_log('Service workers are not possible on this browser.');
   }
-  
+
   //const clientSchema = {};
   //generate client schema from introspection query and save to DB
   try {
-    await fetch("https://rickandmortyapi.com/graphql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: getIntrospectionQuery() })
+    await fetch('https://rickandmortyapi.com/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: getIntrospectionQuery() }),
     })
-      .then(res => res.json())
-      .then(async res => {
-        if(res.data){
+      .then((res) => res.json())
+      .then(async (res) => {
+        if (res.data) {
           console.log(res.data);
           clientSchema.data = buildClientSchema(res.data);
           console.log(typeof clientSchema.data);
@@ -104,18 +100,21 @@ export const register = async (userSettings) => {
           await set('schema', 'Schema', ourData);
           sw_log('Client schema succesfully added to IndexedDB'); */
         } //else { sw_log('Error adding client schema to IndexedDB') }
+<<<<<<< HEAD
       })
       //await set('schema', 'Schema', res.data );
       //sw_log(JSON.stringify(clientSchema.data));
       console.log(clientSchema);
       
+=======
+      });
+    //await set('schema', 'Schema', res.data );
+    //sw_log(JSON.stringify(clientSchema.data));
+    console.log(clientSchema.data);
+>>>>>>> 8a041783aa8c0a4e5630ea9a145fcf08c8acf65a
   } catch (err) {
     sw_log('Error executing schema introspection query');
   }
-  
-  
-
-
 };
 
 export function setupMetrics() {
