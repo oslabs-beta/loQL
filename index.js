@@ -6,8 +6,10 @@ import { avgDiff, cachedAvg, uncachedAvg, summary } from './helpers/metrics';
  * useMetrics: Enable or disable saving caching metrics to IndexedDB.
  * cacheMethod: Desired strategy for serving/updating cached data to the client.
  * cacheExpirationLimit: Amount of time (in milliseconds) before cached data is refetched from GraphQL endpoint.
- * doNotCacheGlobal: An array of strings (types, as per the endpoint-specific GQL schema) and whose inclusion will exempt a query response from being cached regardless of the GraphQL request endpoint.
- * doNotCacheCustom: An object where each key is an endpoint, and the corresponding value is an array of strings that references specific types (as defined in the GQL schema) whose inclusion in a query will exempt it from caching.
+ * doNotCacheGlobal: An array of strings (types, as per the endpoint-specific GQL schema),
+ * and whose inclusion will exempt a query response from being cached regardless of the GraphQL request endpoint.
+ * doNotCacheCustom: An object where each key is an endpoint, and the corresponding value is an array of strings that references specific types,
+ * (as defined in the GQL schema) whose inclusion in a query will exempt it from caching.
  */
 
 export const validSettings = [
