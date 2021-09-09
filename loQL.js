@@ -5,12 +5,18 @@ import { validSettings } from './index';
 import { ourMD5 } from './helpers/md5';
 import { parse, visit } from 'graphql/language';
 
+/* Ensure newer versions of service worker take over tab upon reload */
+self.addEventListener('install', function (event) {
+  event.waitUntil(self.skipWaiting());
+});
+
 /*
  * Grab settings from IDB set during activation.
  * Do this before registering our event listeners.
  */
 const settings = {};
-self.addEventListener('activate', async () => {
+self.addEventListener('activate', async (event) => {
+  event.waitUntil(self.clients.claim()); // Take control on first load.
   try {
     await Promise.all(
       validSettings.map(async (setting) => {
@@ -26,7 +32,7 @@ self.addEventListener('activate', async () => {
 
 /*
  Listen for fetch events, and for those to the /graphql endpoint,
- run our caching logic  , passing in information about the request.
+ run our caching logic, passing in information about the request.
 */
 self.addEventListener('fetch', async (fetchEvent) => {
   const metrics = new Metrics();
@@ -36,30 +42,32 @@ self.addEventListener('fetch', async (fetchEvent) => {
   const { gqlEndpoints } = settings;
   const endpoint = urlObject.origin + urlObject.pathname;
 
-  /* Executes request and delivers response. */
-  async function fetchAndGetResponse() {
-    try {
-      const { data, hashedQuery } = await runCachingLogic({
-        urlObject,
-        method,
-        headers,
-        metrics,
-        request: fetchEvent.request,
-      });
-      metrics.save(hashedQuery);
-      return new Response(JSON.stringify(data), { status: 200 });
-    } catch (err) {
-      /* Global error catch. Catches errors and logs more detailed information. */
-      sw_error_log('There was an error in the caching logic!', err);
-      return await fetch(clone);
-    }
-  }
   /* Check if the fetch request URL matches a graphQL endpoint as defined in settings. */
-  if (gqlEndpoints.indexOf(endpoint) !== -1) {
-    fetchEvent.respondWith(fetchAndGetResponse());
+  if (gqlEndpoints && gqlEndpoints.indexOf(endpoint) !== -1) {
+    fetchEvent.respondWith(
+      fetchAndGetResponse({ urlObject, method, headers, metrics, request: fetchEvent.request })
+    );
   }
-
 });
+
+/* Executes request and delivers response. */
+async function fetchAndGetResponse({ urlObject, method, headers, metrics, request }) {
+  try {
+    const { data, hashedQuery } = await runCachingLogic({
+      urlObject,
+      method,
+      headers,
+      metrics,
+      request,
+    });
+    metrics.save(hashedQuery);
+    return new Response(JSON.stringify(data), { status: 200 });
+  } catch (err) {
+    /* Global error catch. Catches errors and logs more detailed information. */
+    sw_error_log('There was an error in the caching logic!', err);
+    return await fetch(clone);
+  }
+}
 
 /* 
  The main wrapper function for our caching solution.
