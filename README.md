@@ -1,6 +1,6 @@
 # loQL
 
-A light, modular npm package for performant client-side GraphQL caching with Service Workers and IndexedDB.
+A light, modular npm package for performant client-side GraphQL caching with Service Workers and IndexedDB. More detailed information about installing and configuring loQL can be found <a href="https://loql.land/docs">here</a>.
 
 ## Installation
 
@@ -9,27 +9,73 @@ Install via [npm](https://www.npmjs.com/package/loql)
 ```bash
 npm install loql
 ```
+Or with Yarn
 
-## Usage
+```bash
+yarn add loql
+```
 
-I. Set configuration object:
-
-a. gqlEndpoints (Required): Add GraphQL endpoint URL's to be enabled for caching. (Array of strings)
-
-b. useMetrics (Optional): Enable metrics collection. (Boolean)
-
-c. cacheMethod (Optional): Desired caching strategy. (String)
-
-d. cacheExpirationLimit (Optional): Interval, in milliseconds, at which to refresh cached data. (Integer)
-
-e. doNotCacheGlobal (Optional): Define schema-specific types/fields, whose inclusion in a query will render that query ignored by the caching logic. (Arrays of strings)
-
-f. doNotCacheCustom (Optional): Similar to above, but endpoint-specific. (Object where each key is an endpoint, and the corresponding value is the array of types/fields intended to bypass the cache.
+The service worker must also be included in your build folder. With webpack:
 
 ```javascript
-{
+const path = require('path');
+
+module.exports = {
+  entry: {
+    bundle: './client/index.js',
+    loQL: './node_modules/loql-cache/loQL.js', // Add this line!
+  },
+  output: {
+  path: path.resolve(__dirname, 'public'),
+    filename: '[name].js',
+    clean: true,
+  },
+  devServer: {
+    static: './client',
+  },
+};
+```
+
+## Register the service worker
+
+```javascript
+import { register } from "loql-cache";
+register({ gqlEndpoints: ["https://foo.com"] });
+```
+
+## Settings
+
+
+`gqlEndpoints: string[] Required`
+
+Enable caching for specific GraphQL endpoint URLs. Network calls from the browser to any URL not listed here will be ignored by the service worker and the response data will not be cached.
+
+`useMetrics: boolean Optional`
+
+Enable metrics collection. 
+
+`cacheMethod: string Optional`
+
+Desired caching strategy. The loql-cache package supports both "cache-first" and "cache-network" policies.
+
+`cacheExpirationLimit: Integer Optional`
+
+The interval, in milliseconds, after which cached data is considered stale. 
+
+`doNotCacheGlobal: string[] Optional`
+
+Fields on a GraphQL query that will prevent the query from being cached, no matter the endpoint.
+
+`doNotCacheCustom:{ [url]: string[] } Optional`
+
+This setting is like doNotCacheGlobal, but can be used on a per-endpoint basis.
+
+### Example Configuration
+
+```javascript
+const loQLConfiguration = {
   gqlEndpoints: ['http://localhost:<###>/api/graphql', 'https://<abc>.com/graphql'],
-  useMetric: false,
+  useMetrics: false,
   cacheExpirationLimit: 20000,
   cacheMethod: 'cache-network',
   doNotCacheGlobal: [],
@@ -37,24 +83,23 @@ f. doNotCacheCustom (Optional): Similar to above, but endpoint-specific. (Object
      'http://localhost:<###>/api/graphql': ['password'],
      'https://<abc>.com/graphql': ['account', 'real_time_data'];
   }
-}
+};
+
+register(loqlConfiguration);
 ```
 
 ## Features
-- Enables offline use: IndexedDB storage is high-capacity and persists, while keeping reads/writes asynchronous.
-- Minimum-dependency: No server-side component, avoid use of large libraries
-- Cache validation: Keep data fresh with shorter expiration limits, or cache-network strategy
-- Simple: Install package, configure one mandatory setting, and go
-- Flexible: Easily exempt certain types of queries from caching
+- Enables offline use: IndexedDB storage provides high-capacity and persistent storage, while keeping reads/writes asynchronous
+- Minimum-dependency: No server-side component, avoid the use of large libraries
+- Cache validation: Keep data fresh with shorter expiration limits, cache-network strategy, or both!
+- Easy-to-use: Install package, register and configure service worker, start caching
+- Flexible: Works with GQL queries made as both fetch POST and GET requests
+- Easily exempt types of queries from being cached at the global or endpoint-specific level
 
-## Usage Notes (NOTE: Work in progress)
-- unsupported operations
-- normalization & deep nesting
-
-## Supported Browsers
-Desktop: Edge, Firefox, Chrome, Safari, Opera
-
-Mobile: Firefox, Chrome, Android Browser, Samsung Internet
+## Usage Notes
+- Caching is currently only supported for query-type operations. Mutations, subscriptions, etc will still run,
+  but will not be cached. 
+- Cached data normalization feature is disabled.
 
 ## Contributing
 Contributions are welcome. Please read CONTRIBUTE.md prior to making a Pull Request.
