@@ -4,15 +4,15 @@ A light, modular npm package for performant client-side GraphQL caching with Ser
 
 ## Installation
 
-Install via [npm](https://www.npmjs.com/package/loql) 
+Install via [npm](https://www.npmjs.com/package/loql-cache) 
 
 ```bash
-npm install loql
+npm install loql-cache
 ```
 Or with Yarn
 
 ```bash
-yarn add loql
+yarn add loql-cache
 ```
 
 The service worker must also be included in your build folder. With webpack:
