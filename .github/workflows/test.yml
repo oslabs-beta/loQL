@@ -3,17 +3,16 @@ name: Node.js CI
 on:
   pull_request:
     branches: ['main', 'dev']
+  push:
+    branches: 'main'
 jobs:
   test:
     runs-on: ubuntu-latest
     container: node:10.18-jessie # Run in NodeJS container
-    strategy:
-      matrix:
-        node-version: [16.x, 14.x]
     steps:
       - uses: actions/checkout@v2
       - name: Testing
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
           node-version:
           cache: 'npm'
