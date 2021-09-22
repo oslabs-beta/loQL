@@ -1,0 +1,21 @@
+# Runs test test suite
+name: Node.js CI
+on:
+  pull_request:
+    branches: ['main', 'dev']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: node:10.18-jessie # Run in NodeJS container
+    strategy:
+      matrix:
+        node-version: [16.x, 14.x]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Testing
+        uses: actions/setup-node@v1
+        with:
+          node-version:
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:ci
